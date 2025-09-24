@@ -127,7 +127,9 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   // Handle session expiration and authentication errors
   if (response.status === 401 || response.status === 403) {
     try {
-      const errorData = await response.json()
+      // Clone the response to avoid "body stream already read" error
+      const responseClone = response.clone()
+      const errorData = await responseClone.json()
       const errorMessage = errorData.message || errorData.error || ''
       
       console.log('🔒 [Auth] Authentication error:', response.status)

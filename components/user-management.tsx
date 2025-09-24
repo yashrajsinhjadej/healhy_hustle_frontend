@@ -1,17 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { 
   Download, 
   Search, 
-  MoreHorizontal, 
   Edit, 
   Trash2, 
   Eye, 
@@ -28,7 +27,30 @@ import {
   Shield,
   LogOut,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  List,
+  ListOrdered,
+  Link,
+  Image,
+  Video,
+  Table as TableIcon,
+  Quote,
+  Undo,
+  Redo,
+  Save,
+  Type,
+  Palette,
+  Minus,
+  Plus
 } from "lucide-react"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
 import { useRouter } from "next/navigation"
@@ -50,9 +72,13 @@ interface UsersResponse {
   success: boolean
   data: {
     users: User[]
-    totalUsers: number
-    currentPage: number
-    totalPages: number
+    pagination: {
+      currentPage: number
+      totalPages: number
+      totalUsers: number
+      hasNextPage: boolean
+      hasPrevPage: boolean
+    }
     stats: {
       totalUsers: number
       activeUsers: number
@@ -73,9 +99,21 @@ export function UserManagement() {
   const [stats, setStats] = useState<{totalUsers: number, activeUsers: number, completedProfiles: number} | null>(null)
   const [userProfile, setUserProfile] = useState<UserType | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [pagination, setPagination] = useState<{
+    currentPage: number
+    totalPages: number
+    totalUsers: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+  } | null>(null)
   const [isCmsDropdownOpen, setIsCmsDropdownOpen] = useState(false)
   const [activeCmsPage, setActiveCmsPage] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<'user-management' | 'cms-management'>('user-management')
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [cmsContent, setCmsContent] = useState('')
+  const [isCmsLoading, setIsCmsLoading] = useState(false)
+  const editorRef = useRef<HTMLDivElement>(null)
   const itemsPerPage = 10
 
   const fetchUsers = async (page: number = 1, search: string = "") => {
@@ -83,13 +121,23 @@ export function UserManagement() {
       setIsLoading(true)
       setError("")
       
+      console.log('🔄 [UserManagement] Fetching users - Page:', page, 'Search:', search)
+      
       const params = new URLSearchParams({
         page: page.toString(),
         limit: itemsPerPage.toString(),
-        ...(search && { search })
+        ...(search && { search }),
+        _t: Date.now().toString() // Cache busting parameter
       })
 
-      const response = await authenticatedFetch(`/api/users?${params}`)
+      console.log('🌐 [UserManagement] Making API call to:', `/api/users?${params}`)
+      const response = await authenticatedFetch(`/api/users?${params}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
       
       // Check if response indicates session expiration
       if (response.status === 401) {
@@ -111,10 +159,12 @@ export function UserManagement() {
 
       if (data.success && data.data) {
         setUsers(data.data.users || [])
-        setTotalUsers(data.data.totalUsers || 0)
-        setTotalPages(data.data.totalPages || 1)
+        setTotalUsers(data.data.pagination?.totalUsers || 0)
+        setTotalPages(data.data.pagination?.totalPages || 1)
         setStats(data.data.stats || null)
+        setPagination(data.data.pagination || null)
         console.log('✅ [UserManagement] Data updated successfully')
+        console.log('📊 [UserManagement] Pagination:', data.data.pagination)
       } else {
         console.error('❌ [UserManagement] API returned unsuccessful response:', data)
         setError("Failed to fetch users")
@@ -162,13 +212,100 @@ export function UserManagement() {
         await fetchUsers(currentPage, searchTerm)
       } else {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to delete user')
+        console.log('❌ [UserManagement] Delete failed:', errorData)
+        console.log('❌ [UserManagement] Response status:', response.status)
+        
+        // Display the specific error message from backend
+        const errorMessage = errorData.error || errorData.message || 'Failed to delete user'
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error('❌ [UserManagement] Error deleting user:', error)
       setError(error instanceof Error ? error.message : 'Failed to delete user')
     } finally {
       setDeletingUserId(null)
+    }
+  }
+
+  const handleViewUser = (userId: string) => {
+    const user = users.find(u => u.id === userId)
+    if (user) {
+      setSelectedUser(user)
+      setIsViewModalOpen(true)
+    }
+  }
+
+  // Rich text editor functions
+  const executeCommand = (command: string, value?: string) => {
+    if (editorRef.current) {
+      editorRef.current.focus()
+      
+      // Try modern approach first
+      if (document.queryCommandSupported && document.queryCommandSupported(command)) {
+        const success = document.execCommand(command, false, value)
+        console.log(`Command ${command} executed:`, success)
+      } else {
+        // Fallback for unsupported commands
+        console.log(`Command ${command} not supported`)
+      }
+      
+      // Update content state
+      setCmsContent(editorRef.current.innerHTML)
+    }
+  }
+
+  const insertContent = (content: string) => {
+    if (editorRef.current) {
+      editorRef.current.focus()
+      
+      // Use modern approach
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        range.deleteContents()
+        
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = content
+        const fragment = document.createDocumentFragment()
+        
+        while (tempDiv.firstChild) {
+          fragment.appendChild(tempDiv.firstChild)
+        }
+        
+        range.insertNode(fragment)
+        selection.removeAllRanges()
+      } else {
+        // Fallback to execCommand
+        document.execCommand('insertHTML', false, content)
+      }
+      
+      console.log('Content inserted')
+      // Update content state
+      setCmsContent(editorRef.current.innerHTML)
+    }
+  }
+
+  const handleCmsSave = async () => {
+    setIsCmsLoading(true)
+    try {
+      // Here you would typically save to your backend
+      console.log('Saving CMS content:', cmsContent)
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      alert('Content saved successfully!')
+    } catch (error) {
+      console.error('Error saving content:', error)
+      alert('Failed to save content. Please try again.')
+    } finally {
+      setIsCmsLoading(false)
+    }
+  }
+
+  const handleCmsCancel = () => {
+    if (confirm('Are you sure you want to cancel? All unsaved changes will be lost.')) {
+      setCmsContent('')
     }
   }
 
@@ -259,16 +396,26 @@ export function UserManagement() {
     fetchUserProfile()
   }, [])
 
+  // Fetch users on component mount
   useEffect(() => {
+    console.log('🚀 [UserManagement] Component mounted - fetching initial data')
+    fetchUsers(currentPage, searchTerm)
+  }, []) // Empty dependency array means this runs only on mount
+
+  useEffect(() => {
+    console.log('📄 [UserManagement] Page changed to:', currentPage)
     fetchUsers(currentPage, searchTerm)
   }, [currentPage])
 
   useEffect(() => {
+    console.log('🔍 [UserManagement] Search term changed to:', searchTerm)
     const debounceTimer = setTimeout(() => {
       if (searchTerm !== "") {
+        console.log('🔍 [UserManagement] Searching with term:', searchTerm)
         fetchUsers(1, searchTerm)
         setCurrentPage(1)
       } else {
+        console.log('🔍 [UserManagement] Search cleared, fetching all users')
         fetchUsers(currentPage, "")
       }
     }, 500)
@@ -309,7 +456,11 @@ export function UserManagement() {
                   ? 'bg-[#fc6c6c] text-white'
                   : 'text-[#e6e6e6] hover:text-white'
               }`}
-              onClick={() => setActiveSection('user-management')}
+              onClick={() => {
+                setActiveSection('user-management')
+                setIsCmsDropdownOpen(false)
+                setActiveCmsPage(null)
+              }}
             >
               <User className="w-5 h-5" />
               <span className="font-medium">User management</span>
@@ -324,7 +475,7 @@ export function UserManagement() {
             <div className="space-y-1">
               <div 
                 className={`px-4 py-2 flex items-center justify-between cursor-pointer transition-colors rounded-lg ${
-                  activeSection === 'cms-management' || activeCmsPage
+                  activeSection === 'cms-management'
                     ? 'bg-[#fc6c6c] text-white' 
                     : 'text-[#e6e6e6] hover:text-white'
                 }`}
@@ -472,20 +623,339 @@ export function UserManagement() {
                 
                 {activeCmsPage === 'about-us' && (
                   <div>
-                    <label className="block text-sm font-medium text-[#000000] mb-2">
-                      Description:
-                    </label>
-                    <div className="border border-gray-300 rounded-lg p-4 min-h-[400px] bg-white">
-                      <div className="text-gray-500 text-center py-20">
-                        Rich text editor will be implemented here
+                    {/* Toolbar */}
+                    <div className="border rounded-lg p-3 bg-gray-50 mb-4">
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {/* Font Controls */}
+                        <div className="flex items-center gap-1 border-r pr-2">
+                          <select 
+                            className="px-2 py-1 text-sm border rounded"
+                            onChange={(e) => {
+                              e.preventDefault()
+                              executeCommand('fontName', e.target.value)
+                            }}
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                          </select>
+                          
+                          <select 
+                            className="px-2 py-1 text-sm border rounded"
+                            onChange={(e) => {
+                              e.preventDefault()
+                              executeCommand('formatBlock', e.target.value)
+                            }}
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <option value="div">Normal Text</option>
+                            <option value="h1">Heading 1</option>
+                            <option value="h2">Heading 2</option>
+                            <option value="h3">Heading 3</option>
+                            <option value="h4">Heading 4</option>
+                            <option value="h5">Heading 5</option>
+                            <option value="h6">Heading 6</option>
+                          </select>
+                        </div>
+
+                        {/* Font Size Controls */}
+                        <div className="flex items-center gap-1 border-r pr-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('fontSize', '3')
+                            }}
+                            title="Decrease font size"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                          <span className="px-2 py-1 text-sm border rounded bg-white">12</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('fontSize', '5')
+                            }}
+                            title="Increase font size"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('foreColor', '#000000')
+                            }}
+                            title="Text color"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Palette className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* Text Alignment */}
+                        <div className="flex items-center gap-1 border-r pr-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('justifyLeft')
+                            }}
+                            title="Align left"
+                            className="h-8 w-8 p-0"
+                          >
+                            <AlignLeft className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('justifyCenter')
+                            }}
+                            title="Align center"
+                            className="h-8 w-8 p-0"
+                          >
+                            <AlignCenter className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('justifyRight')
+                            }}
+                            title="Align right"
+                            className="h-8 w-8 p-0"
+                          >
+                            <AlignRight className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('justifyFull')
+                            }}
+                            title="Justify"
+                            className="h-8 w-8 p-0"
+                          >
+                            <AlignJustify className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* Text Formatting */}
+                        <div className="flex items-center gap-1 border-r pr-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('bold')
+                            }}
+                            title="Bold"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Bold className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('italic')
+                            }}
+                            title="Italic"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Italic className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('underline')
+                            }}
+                            title="Underline"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Underline className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              executeCommand('strikeThrough')
+                            }}
+                            title="Strikethrough"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Strikethrough className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* Lists */}
+                        <div className="flex items-center gap-1 border-r pr-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => executeCommand('insertUnorderedList')}
+                            title="Bullet list"
+                            className="h-8 w-8 p-0"
+                          >
+                            <List className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => executeCommand('insertOrderedList')}
+                            title="Numbered list"
+                            className="h-8 w-8 p-0"
+                          >
+                            <ListOrdered className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* Insert Options */}
+                        <div className="flex items-center gap-1 border-r pr-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const url = prompt('Enter URL:')
+                              if (url) executeCommand('createLink', url)
+                            }}
+                            title="Insert link"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Link className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const url = prompt('Enter image URL:')
+                              if (url) insertContent(`<img src="${url}" alt="Image" style="max-width: 100%; height: auto;" />`)
+                            }}
+                            title="Insert image"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Image className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const url = prompt('Enter video URL:')
+                              if (url) insertContent(`<iframe src="${url}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`)
+                            }}
+                            title="Insert video"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Video className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => insertContent('<table border="1" style="border-collapse: collapse;"><tr><td>Cell 1</td><td>Cell 2</td></tr><tr><td>Cell 3</td><td>Cell 4</td></tr></table>')}
+                            title="Insert table"
+                            className="h-8 w-8 p-0"
+                          >
+                            <TableIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => insertContent('<blockquote style="border-left: 4px solid #ccc; margin: 0; padding-left: 16px; font-style: italic;">Quote text here</blockquote>')}
+                            title="Insert quote"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Quote className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* Undo/Redo */}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => executeCommand('undo')}
+                            title="Undo"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Undo className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => executeCommand('redo')}
+                            title="Redo"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Redo className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Editor */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-[#000000] mb-2">
+                        Description:
+                      </label>
+                      <div
+                        ref={editorRef}
+                        contentEditable
+                        className="min-h-[400px] p-4 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        style={{ 
+                          fontFamily: 'Arial, sans-serif',
+                          fontSize: '14px',
+                          lineHeight: '1.6'
+                        }}
+                        onInput={(e) => setCmsContent(e.currentTarget.innerHTML)}
+                        suppressContentEditableWarning={true}
+                      />
+                    </div>
+
+                    {/* Action Buttons */}
                     <div className="flex justify-end gap-3 mt-6">
-                      <Button variant="outline" className="border-gray-300 text-gray-700">
+                      <Button 
+                        variant="outline" 
+                        className="border-gray-300 text-gray-700 flex items-center gap-2"
+                        onClick={handleCmsCancel}
+                        disabled={isCmsLoading}
+                      >
+                        <X className="w-4 h-4" />
                         Cancel
                       </Button>
-                      <Button className="bg-gray-800 text-white hover:bg-gray-900">
-                        Save
+                      <Button 
+                        className="bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-2"
+                        onClick={handleCmsSave}
+                        disabled={isCmsLoading}
+                      >
+                        {isCmsLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Save
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -583,8 +1053,14 @@ export function UserManagement() {
 
               {/* Error Message */}
               {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm">{error}</p>
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 text-xs font-bold">!</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-red-700">Error</p>
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
                 </div>
               )}
 
@@ -661,31 +1137,45 @@ export function UserManagement() {
                               </p>
                             </TableCell>
                             <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditUser(user.id)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteUser(user.id, user.name)}
-                                    className="text-red-600"
-                                    disabled={deletingUserId === user.id}
-                                  >
-                                    {deletingUserId === user.id ? (
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                    )}
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <div className="flex items-center gap-2">
+                                {/* View Button */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewUser(user.id)}
+                                  className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                                  title="View user details"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                
+                                {/* Edit Button */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditUser(user.id)}
+                                  className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
+                                  title="Edit user"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                
+                                {/* Delete Button */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteUser(user.id, user.name)}
+                                  disabled={deletingUserId === user.id}
+                                  className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                                  title="Delete user"
+                                >
+                                  {deletingUserId === user.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -706,7 +1196,7 @@ export function UserManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={currentPage === 1}
+                      disabled={!pagination?.hasPrevPage}
                       className="border-[#e1e1e1] text-[#7b7b7b]"
                     >
                       <ChevronLeft className="w-3 h-3 text-[#7b7b7b]" />
@@ -772,7 +1262,7 @@ export function UserManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
+                      disabled={!pagination?.hasNextPage}
                       className="border-[#e1e1e1] text-[#7b7b7b]"
                     >
                       <ChevronRight className="w-3 h-3 text-[#7b7b7b]" />
@@ -784,6 +1274,99 @@ export function UserManagement() {
           )}
         </div>
       </div>
+
+      {/* User Details Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              User Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              {/* User Avatar and Basic Info */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src="/placeholder-user.jpg" />
+                  <AvatarFallback className="bg-[#7b7b7b] text-white text-lg">
+                    {selectedUser.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedUser.name}</h3>
+                  <p className="text-sm text-gray-600">ID: {selectedUser.id}</p>
+                  <Badge 
+                    variant={selectedUser.status === "Active" ? "default" : "secondary"}
+                    className={selectedUser.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                  >
+                    {selectedUser.status}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* User Details */}
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Email:</span>
+                  <span className="text-sm text-gray-900">{selectedUser.email || "Not provided"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Phone:</span>
+                  <span className="text-sm text-gray-900">{selectedUser.phone || "Not provided"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Gender:</span>
+                  <span className="text-sm text-gray-900">{selectedUser.gender || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Age:</span>
+                  <span className="text-sm text-gray-900">{selectedUser.age || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Profile Completed:</span>
+                  <Badge 
+                    variant={selectedUser.profileCompleted ? "default" : "secondary"}
+                    className={selectedUser.profileCompleted ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}
+                  >
+                    {selectedUser.profileCompleted ? "Completed" : "Incomplete"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Signup Date:</span>
+                  <span className="text-sm text-gray-900">{new Date(selectedUser.signupDate).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-600">Last Login:</span>
+                  <span className="text-sm text-gray-900">{new Date(selectedUser.lastLogin).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsViewModalOpen(false)
+                    handleEditUser(selectedUser.id)
+                  }}
+                  className="bg-[#000000] text-white hover:bg-[#212121]"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit User
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

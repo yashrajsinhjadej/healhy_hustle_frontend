@@ -32,6 +32,7 @@ export function EditUserForm({ userId }: EditUserFormProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Form state
   const [formData, setFormData] = useState({
@@ -51,29 +52,31 @@ export function EditUserForm({ userId }: EditUserFormProps) {
         setIsLoading(true)
         setError("")
         
-        // For now, we'll fetch from the users list API
-        // Later you can create a specific user detail API
-        const response = await authenticatedFetch("/api/users?limit=1000")
+        console.log('🔍 [EditUserForm] Fetching user data for ID:', userId)
+        
+        // Fetch specific user data using the new API endpoint
+        const response = await authenticatedFetch(`/api/users/${userId}`)
         
         if (!response.ok) {
           throw new Error("Failed to fetch user data")
         }
 
         const data = await response.json()
-        const foundUser = data.data.users.find((u: User) => u.id === userId)
+        console.log('🔍 [EditUserForm] User data received:', data)
         
-        if (!foundUser) {
+        if (!data.success || !data.data) {
           throw new Error("User not found")
         }
 
+        const foundUser = data.data
         setUser(foundUser)
         setFormData({
-          name: foundUser.name,
-          email: foundUser.email,
-          phone: foundUser.phone,
-          gender: foundUser.gender,
-          age: foundUser.age.toString(),
-          profileCompleted: foundUser.profileCompleted,
+          name: foundUser.name || "",
+          email: foundUser.email || "",
+          phone: foundUser.phone || "",
+          gender: foundUser.gender || "",
+          age: foundUser.age && foundUser.age !== "Not specified" ? foundUser.age.toString() : "",
+          profileCompleted: foundUser.profileCompleted || false,
           isActive: foundUser.status === "Active"
         })
         
@@ -95,18 +98,111 @@ export function EditUserForm({ userId }: EditUserFormProps) {
       ...prev,
       [field]: value
     }))
+    
+    // Validate the field in real-time and update validation errors
+    let fieldError = ""
+    
+    switch (field) {
+      case 'name':
+        fieldError = validateName(value as string)
+        break
+      case 'email':
+        fieldError = validateEmail(value as string)
+        break
+      case 'phone':
+        fieldError = validatePhone(value as string)
+        break
+      case 'age':
+        fieldError = validateAge(value as string)
+        break
+      case 'gender':
+        fieldError = validateGender(value as string)
+        break
+    }
+    
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: fieldError
+    }))
+  }
+
+  // Validation functions
+  const validateEmail = (email: string): string => {
+    if (!email.trim()) return "Email is required"
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) return "Please enter a valid email address"
+    return ""
+  }
+
+  const validateName = (name: string): string => {
+    if (!name.trim()) return "Name is required"
+    if (name.trim().length < 2) return "Name must be at least 2 characters long"
+    if (name.trim().length > 50) return "Name must be less than 50 characters"
+    return ""
+  }
+
+  const validatePhone = (phone: string): string => {
+    if (!phone.trim()) return "Phone number is required"
+    // More flexible phone validation - accepts various formats
+    const cleanPhone = phone.replace(/\s/g, '')
+    const phoneRegex = /^[\+]?[1-9]\d{6,14}$/
+    if (!phoneRegex.test(cleanPhone)) return "Please enter a valid phone number (7-15 digits)"
+    return ""
+  }
+
+  const validateAge = (age: string): string => {
+    if (!age.trim()) return "Age is required"
+    const ageNum = parseInt(age)
+    if (isNaN(ageNum)) return "Age must be a valid number"
+    if (ageNum < 13) return "Age must be at least 13"
+    if (ageNum > 120) return "Age must be less than 120"
+    return ""
+  }
+
+  const validateGender = (gender: string): string => {
+    if (!gender) return "Gender is required"
+    return ""
+  }
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {}
+    
+    const nameError = validateName(formData.name)
+    if (nameError) errors.name = nameError
+    
+    const emailError = validateEmail(formData.email)
+    if (emailError) errors.email = emailError
+    
+    const phoneError = validatePhone(formData.phone)
+    if (phoneError) errors.phone = phoneError
+    
+    const ageError = validateAge(formData.age)
+    if (ageError) errors.age = ageError
+    
+    const genderError = validateGender(formData.gender)
+    if (genderError) errors.gender = genderError
+    
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleSave = async () => {
     try {
       setIsSaving(true)
       setError("")
+      setValidationErrors({})
+      
+      // Validate form before submitting
+      if (!validateForm()) {
+        setIsSaving(false)
+        return
+      }
       
       // Prepare the request body according to the API specification
       const requestBody = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
         gender: formData.gender,
         age: formData.age ? parseInt(formData.age) : null,
         profileCompleted: formData.profileCompleted,
@@ -116,7 +212,9 @@ export function EditUserForm({ userId }: EditUserFormProps) {
       console.log('✏️ [EditUserForm] Updating user:', userId)
       console.log('✏️ [EditUserForm] Request body:', requestBody)
       
-      const response = await authenticatedFetch(`/api/admin/users/${userId}`, {
+      console.log('💾 [EditUserForm] Saving user data:', requestBody)
+      
+      const response = await authenticatedFetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -124,12 +222,77 @@ export function EditUserForm({ userId }: EditUserFormProps) {
         body: JSON.stringify(requestBody)
       })
 
+      let result
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update user')
+        console.log('❌ [EditUserForm] Update failed:', errorData)
+        console.log('❌ [EditUserForm] Response status:', response.status)
+        console.log('❌ [EditUserForm] Full error response:', JSON.stringify(errorData, null, 2))
+        
+        // Handle different types of backend validation errors
+        const errorMessage = errorData.error || errorData.message || 'Failed to update user'
+        
+        console.log('🔍 [EditUserForm] Processing error message:', errorMessage)
+        console.log('🔍 [EditUserForm] Error message lowercase:', errorMessage.toLowerCase())
+        
+        // Check if it's a field-specific validation error
+        if (response.status === 400 || response.status === 422) {
+          // Handle field-specific validation errors
+          if ((errorMessage.toLowerCase().includes('email') && 
+               (errorMessage.toLowerCase().includes('already exists') || 
+                errorMessage.toLowerCase().includes('already in use'))) ||
+              errorMessage.toLowerCase().includes('email is already in use')) {
+            console.log('✅ [EditUserForm] Email validation error detected, setting field error')
+            setValidationErrors(prev => ({
+              ...prev,
+              email: 'This email address is already in use'
+            }))
+            setError('')
+            return // Don't throw error, let user fix the field
+          }
+          
+          if ((errorMessage.toLowerCase().includes('phone') && 
+               (errorMessage.toLowerCase().includes('already exists') || 
+                errorMessage.toLowerCase().includes('already in use'))) ||
+              errorMessage.toLowerCase().includes('phone is already in use')) {
+            setValidationErrors(prev => ({
+              ...prev,
+              phone: 'This phone number is already in use'
+            }))
+            setError('')
+            return // Don't throw error, let user fix the field
+          }
+          
+          // Handle other validation errors
+          if (errorMessage.toLowerCase().includes('invalid email')) {
+            setValidationErrors(prev => ({
+              ...prev,
+              email: 'Please enter a valid email address'
+            }))
+            setError('')
+            return
+          }
+          
+          // Fallback: if it's a validation error and mentions email, treat as email error
+          if (errorMessage.toLowerCase().includes('email') && 
+              (errorMessage.toLowerCase().includes('validation') || 
+               errorMessage.toLowerCase().includes('failed'))) {
+            console.log('✅ [EditUserForm] Generic email validation error detected')
+            setValidationErrors(prev => ({
+              ...prev,
+              email: 'Email validation failed: ' + errorMessage
+            }))
+            setError('')
+            return
+          }
+        }
+        
+        // For other errors, display as general error
+        setError(errorMessage)
+        return // Exit early for error cases
       }
 
-      const result = await response.json()
+      result = await response.json()
       console.log('✅ [EditUserForm] User updated successfully:', result)
       
       // Show success message
@@ -140,7 +303,23 @@ export function EditUserForm({ userId }: EditUserFormProps) {
       
     } catch (error) {
       console.error("Error saving user:", error)
-      setError(error instanceof Error ? error.message : "Failed to save user")
+      
+      // Handle network errors or other unexpected errors
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          setError('Network error. Please check your connection and try again.')
+        } else if (error.message.includes('Session expired')) {
+          setError('Your session has expired. Please log in again.')
+          // Optionally redirect to login
+          setTimeout(() => {
+            router.push('/login')
+          }, 2000)
+        } else {
+          setError(error.message)
+        }
+      } else {
+        setError("An unexpected error occurred. Please try again.")
+      }
     } finally {
       setIsSaving(false)
     }
@@ -148,6 +327,30 @@ export function EditUserForm({ userId }: EditUserFormProps) {
 
   const handleCancel = () => {
     router.push("/dashboard")
+  }
+
+  const renderFieldError = (fieldName: string) => {
+    const error = validationErrors[fieldName]
+    if (!error) return null
+    
+    return (
+      <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+        <span className="text-red-500">•</span>
+        {error}
+      </p>
+    )
+  }
+
+  const getFieldClassName = (fieldName: string) => {
+    const hasError = validationErrors[fieldName]
+    return hasError 
+      ? "border-red-300 focus:border-red-500 focus:ring-red-500" 
+      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+  }
+
+  const isFormValid = () => {
+    const errors = Object.values(validationErrors).filter(error => error.trim() !== "")
+    return errors.length === 0
   }
 
   if (isLoading) {
@@ -213,9 +416,10 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]"
+                  className={`bg-[#f1f2f3] text-[#000000] ${getFieldClassName("name")}`}
                   placeholder="Enter user name"
                 />
+                {renderFieldError("name")}
               </div>
 
               {/* Email */}
@@ -228,9 +432,10 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]"
+                  className={`bg-[#f1f2f3] text-[#000000] ${getFieldClassName("email")}`}
                   placeholder="Enter email address"
                 />
+                {renderFieldError("email")}
               </div>
 
               {/* Phone */}
@@ -242,9 +447,10 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]"
+                  className={`bg-[#f1f2f3] text-[#000000] ${getFieldClassName("phone")}`}
                   placeholder="Enter phone number"
                 />
+                {renderFieldError("phone")}
               </div>
 
               {/* Gender */}
@@ -253,7 +459,7 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                   Gender *
                 </Label>
                 <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
-                  <SelectTrigger className="bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]">
+                  <SelectTrigger className={`bg-[#f1f2f3] text-[#000000] ${getFieldClassName("gender")}`}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -263,6 +469,7 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                     <SelectItem value="Not specified">Not specified</SelectItem>
                   </SelectContent>
                 </Select>
+                {renderFieldError("gender")}
               </div>
 
               {/* Age */}
@@ -275,11 +482,12 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                   type="number"
                   value={formData.age}
                   onChange={(e) => handleInputChange("age", e.target.value)}
-                  className="bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]"
+                  className={`bg-[#f1f2f3] text-[#000000] ${getFieldClassName("age")}`}
                   placeholder="Enter age"
                   min="1"
                   max="120"
                 />
+                {renderFieldError("age")}
               </div>
 
               {/* Profile Completed */}
@@ -314,10 +522,36 @@ export function EditUserForm({ userId }: EditUserFormProps) {
                 </div>
               </div>
 
+              {/* Validation Summary */}
+              {!isFormValid() && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 text-xs font-bold">!</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">Please fix the following errors:</p>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      {Object.values(validationErrors).filter(error => error.trim() !== "").map((error, index) => (
+                        <li key={index} className="text-red-600 text-xs">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
               {/* Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                  {error}
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 text-xs font-bold">!</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">Update Failed</p>
+                    <p className="text-red-600">{error}</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      Please check the field errors above and try again.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -325,13 +559,22 @@ export function EditUserForm({ userId }: EditUserFormProps) {
               <div className="flex items-center gap-4 pt-4">
                 <Button
                   onClick={handleSave}
-                  disabled={isSaving || !formData.name || !formData.email || !formData.phone || !formData.gender || !formData.age}
-                  className="bg-[#000000] text-white hover:bg-[#212121]"
+                  disabled={isSaving || !isFormValid()}
+                  className={`${
+                    !isFormValid() 
+                      ? "bg-gray-400 text-white cursor-not-allowed" 
+                      : "bg-[#000000] text-white hover:bg-[#212121]"
+                  }`}
                 >
                   {isSaving ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Saving...
+                    </>
+                  ) : !isFormValid() ? (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Fix Errors to Save
                     </>
                   ) : (
                     <>

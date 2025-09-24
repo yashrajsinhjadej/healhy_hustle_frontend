@@ -64,14 +64,17 @@ export function LoginForm() {
         // Redirect to dashboard
         router.push('/dashboard')
       } else {
-        // Login failed
-        if (response.status === 403) {
-          // Clear any existing invalid tokens
-          authUtils.clearAuthData()
-          setError(data.error || data.message || 'Invalid or expired token. Please try again.')
-        } else {
-          setError(data.message || 'Login failed')
-        }
+        // Login failed - display the specific error message from backend
+        console.log('❌ [Login Form] Login failed:', data)
+        console.log('❌ [Login Form] Response status:', response.status)
+        console.log('❌ [Login Form] Error details:', data.error, data.message)
+        
+        // Clear any existing invalid tokens
+        authUtils.clearAuthData()
+        
+        // Display the specific error message from backend
+        const errorMessage = data.error || data.message || 'Login failed. Please try again.'
+        setError(errorMessage)
       }
     } catch (error) {
       console.error('Login error:', error)
@@ -84,8 +87,14 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+          <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-red-600 text-xs font-bold">!</span>
+          </div>
+          <div>
+            <p className="font-medium">Login Failed</p>
+            <p className="text-red-600">{error}</p>
+          </div>
         </div>
       )}
       <div className="space-y-4">

@@ -21,11 +21,26 @@ export async function GET(request: NextRequest) {
     }
     console.log('🔍 [Users API] Backend URL: http://localhost:3000/api/admin/dashboard')
     
-    // Fetch data from the real API endpoint
-    const response = await fetch('http://localhost:3000/api/admin/dashboard', {
+    // Build query parameters for the dashboard API
+    const dashboardParams = new URLSearchParams({
+      page: page.toString(),
+      ...(search && { search }),
+      ...(status && { status }),
+      _t: Date.now().toString() // Cache busting parameter
+    })
+
+    const backendUrl = `http://localhost:3000/api/admin/dashboard?${dashboardParams}`
+    console.log('🔍 [Users API] Full backend URL:', backendUrl)
+    console.log('🔍 [Users API] Request parameters:', { page, search, status })
+
+    // Fetch data from the real API endpoint with pagination
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         ...(authHeader && { 'Authorization': authHeader }),
       },
     })
@@ -67,52 +82,27 @@ export async function GET(request: NextRequest) {
     const apiData = await response.json()
     console.log('🔍 [Users API] Raw backend response:', JSON.stringify(apiData, null, 2))
     
+    // Use the backend's pagination data directly
     const users = apiData.data?.users || []
-    console.log('🔍 [Users API] Extracted users:', users.length, 'users found')
-    console.log('🔍 [Users API] First user sample:', users[0] || 'No users')
-
-    // Filter users based on search term
-    let filteredUsers = users
-    if (search) {
-      filteredUsers = users.filter(
-        (user: any) =>
-          user.name.toLowerCase().includes(search.toLowerCase()) ||
-          user.email.toLowerCase().includes(search.toLowerCase())
-      )
-    }
-
-    // Filter by status if provided
-    if (status) {
-      filteredUsers = filteredUsers.filter((user: any) => user.status === status)
-    }
-
-    // Calculate pagination
-    const totalUsers = filteredUsers.length
-    const totalPages = Math.ceil(totalUsers / limit)
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
-
-    console.log('🔍 [Users API] Final response:', {
-      usersCount: paginatedUsers.length,
-      totalUsers,
-      currentPage: page,
-      totalPages,
-      stats: apiData.data?.stats
-    })
+    const pagination = apiData.data?.pagination || {}
+    const stats = apiData.data?.stats || {}
+    
+    console.log('🔍 [Users API] Backend pagination:', pagination)
+    console.log('🔍 [Users API] Backend stats:', stats)
+    console.log('🔍 [Users API] Users count:', users.length)
 
     return NextResponse.json({
       success: true,
       data: {
-        users: paginatedUsers,
+        users: users,
         pagination: {
-          currentPage: page,
-          totalPages,
-          totalUsers,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1
+          currentPage: pagination.currentPage || page,
+          totalPages: pagination.totalPages || 1,
+          totalUsers: pagination.totalUsers || 0,
+          hasNextPage: pagination.hasNextPage || false,
+          hasPrevPage: pagination.hasPrevPage || false
         },
-        stats: apiData.data?.stats
+        stats: stats
       }
     })
   } catch (error) {

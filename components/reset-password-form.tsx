@@ -100,9 +100,15 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <Alert className="text-left border-red-200 bg-red-50">
-          <AlertDescription className="text-red-700">{error}</AlertDescription>
-        </Alert>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+          <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-red-600 text-xs font-bold">!</span>
+          </div>
+          <div>
+            <p className="font-medium">Reset Failed</p>
+            <p className="text-red-600">{error}</p>
+          </div>
+        </div>
       )}
       
       <div className="space-y-4">
