@@ -15,7 +15,7 @@ const nextConfig = {
   },
   // Enable experimental features for better performance
   experimental: {
-    optimizeCss: true,
+    // optimizeCss: true, // Disabled due to critters module issues
   },
   // Output configuration for Vercel
   output: 'standalone',

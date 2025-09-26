@@ -12,9 +12,10 @@ export interface User {
 
 export interface AuthResponse {
   success: boolean
-  token: string
-  user: User
+  token?: string
+  user?: User
   message?: string
+  error?: string
 }
 
 // Token management functions

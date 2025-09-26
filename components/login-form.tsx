@@ -48,10 +48,10 @@ export function LoginForm() {
 
       const data: AuthResponse = await response.json()
 
-      if (response.ok && data.success) {
+      if (response.ok && data.success && data.token && data.user) {
         // Store token and user data
-        console.log('🔍 [Login Form] Storing token:', data.token?.substring(0, 20) + '...')
-        console.log('🔍 [Login Form] Token length:', data.token?.length)
+        console.log('🔍 [Login Form] Storing token:', data.token.substring(0, 20) + '...')
+        console.log('🔍 [Login Form] Token length:', data.token.length)
         console.log('🔍 [Login Form] User data:', data.user)
         
         authUtils.setAuthData(data.token, data.user)
