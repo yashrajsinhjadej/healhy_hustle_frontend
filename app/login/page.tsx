@@ -1,6 +1,5 @@
 import { LoginForm } from "@/components/login-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
 
 export default function LoginPage() {
   return (
@@ -22,12 +21,6 @@ export default function LoginPage() {
         </Card>
 
         <div className="text-center mt-6 space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
-              Sign up
-            </Link>
-          </p>
           <p className="text-xs text-muted-foreground">
             By signing in, you agree to our{" "}
             <a href="/terms" className="text-primary hover:underline">
