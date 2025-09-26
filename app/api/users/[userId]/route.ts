@@ -20,19 +20,23 @@ export async function GET(
     const authHeader = request.headers.get('authorization')
     
     console.log('🔍 [User Detail API] Fetching user:', userId)
+    console.log('🔍 [User Detail API] Request timestamp:', new Date().toISOString())
     console.log('🔍 [User Detail API] Auth header:', authHeader ? 'Present' : 'Missing')
     if (authHeader) {
       console.log('🔍 [User Detail API] Token preview:', authHeader.substring(0, 20) + '...')
     }
     
-    // Call your backend API to get user details
-    const backendUrl = `http://localhost:3000/api/admin/users/${userId}`
+    // Call your backend API to get user details with cache busting
+    const backendUrl = `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}?_t=${Date.now()}`
     console.log('🔍 [User Detail API] Backend URL:', backendUrl)
     
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         ...(authHeader && { 'Authorization': authHeader }),
       },
     })
@@ -120,7 +124,7 @@ export async function PUT(
     console.log('🔍 [User Update API] Auth header:', authHeader ? 'Present' : 'Missing')
     
     // Call your backend API to update user
-    const backendUrl = `http://localhost:3000/api/admin/users/${userId}`
+    const backendUrl = `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}`
     console.log('🔍 [User Update API] Backend URL:', backendUrl)
     
     const response = await fetch(backendUrl, {

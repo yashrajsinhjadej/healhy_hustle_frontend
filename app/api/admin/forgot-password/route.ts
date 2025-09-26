@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📧 [Forgot Password API] Processing password reset request for:', email)
-    console.log('📧 [Forgot Password API] Backend URL: http://localhost:3000/api/admin/forgot-password')
+    console.log('📧 [Forgot Password API] Backend URL: https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/forgot-password')
     
     // Forward request to backend
-    const response = await fetch('http://localhost:3000/api/admin/forgot-password', {
+    const response = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/forgot-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

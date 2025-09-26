@@ -53,9 +53,19 @@ export function EditUserForm({ userId }: EditUserFormProps) {
         setError("")
         
         console.log('🔍 [EditUserForm] Fetching user data for ID:', userId)
+        console.log('🔍 [EditUserForm] Cache busting timestamp:', Date.now())
         
-        // Fetch specific user data using the new API endpoint
-        const response = await authenticatedFetch(`/api/users/${userId}`)
+        // Fetch specific user data using the new API endpoint with cache busting
+        const response = await authenticatedFetch(`/api/users/${userId}?_t=${Date.now()}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        })
+        
+        console.log('🔍 [EditUserForm] Response status:', response.status)
+        console.log('🔍 [EditUserForm] Response headers:', Object.fromEntries(response.headers.entries()))
         
         if (!response.ok) {
           throw new Error("Failed to fetch user data")

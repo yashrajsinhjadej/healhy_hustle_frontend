@@ -1,8 +1,8 @@
-import { LoginForm } from "@/components/login-form"
+import { SignupForm } from "@/components/signup-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-card flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -13,23 +13,25 @@ export default function LoginPage() {
 
         <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl font-bold text-card-foreground">Welcome Back</CardTitle>
-            <CardDescription className="text-muted-foreground">Sign in to access your admin dashboard</CardDescription>
+            <CardTitle className="text-2xl font-bold text-card-foreground">Create Account</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Join HealthyHustle and start your fitness journey
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <LoginForm />
+            <SignupForm />
           </CardContent>
         </Card>
 
         <div className="text-center mt-6 space-y-2">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="text-primary hover:underline font-medium">
+              Sign in
             </Link>
           </p>
           <p className="text-xs text-muted-foreground">
-            By signing in, you agree to our{" "}
+            By creating an account, you agree to our{" "}
             <a href="/terms" className="text-primary hover:underline">
               Terms of Service
             </a>{" "}

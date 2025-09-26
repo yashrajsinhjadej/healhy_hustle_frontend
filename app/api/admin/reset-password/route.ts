@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
 
     console.log('🔐 [Reset Password API] Processing password reset with token')
     console.log('🔐 [Reset Password API] Token preview:', token.substring(0, 8) + '...')
-    console.log('🔐 [Reset Password API] Backend URL: http://localhost:3000/api/admin/reset-password')
+    console.log('🔐 [Reset Password API] Backend URL: https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/reset-password')
     
     // Forward request to backend
-    const response = await fetch('http://localhost:3000/api/admin/reset-password', {
+    const response = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

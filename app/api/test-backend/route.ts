@@ -6,10 +6,10 @@ export async function GET(request: NextRequest) {
     
     // Test different possible backend URLs
     const possibleUrls = [
-      'http://localhost:3000/api/admin/profile',
-      'http://localhost:3001/api/admin/profile',
-      'http://localhost:8000/api/admin/profile',
-      'http://localhost:5000/api/admin/profile',
+      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
+      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
+      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
+      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
     ]
     
     const results = []

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       console.log('🔐 [Login API] Forwarding login request to backend...')
       
       // Forward the login request to your backend
-      const backendResponse = await fetch('http://localhost:3000/api/admin/login', {
+      const backendResponse = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

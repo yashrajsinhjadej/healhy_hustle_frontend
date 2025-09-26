@@ -313,6 +313,17 @@ export function UserManagement() {
     router.push(`/edit-user/${userId}`)
   }
 
+  // Refresh users list when returning from edit page
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 [UserManagement] Window focused, refreshing users list')
+      fetchUsers(currentPage, searchTerm)
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [currentPage, searchTerm])
+
   const handleLogout = async () => {
     try {
       console.log('🚪 [UserManagement] Starting logout process...')
@@ -396,11 +407,24 @@ export function UserManagement() {
     fetchUserProfile()
   }, [])
 
-  // Fetch users on component mount
+  // Fetch users on component mount and when returning from other pages
   useEffect(() => {
     console.log('🚀 [UserManagement] Component mounted - fetching initial data')
     fetchUsers(currentPage, searchTerm)
   }, []) // Empty dependency array means this runs only on mount
+
+  // Additional effect to refresh data when component becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 [UserManagement] Page became visible, refreshing users list')
+        fetchUsers(currentPage, searchTerm)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [currentPage, searchTerm])
 
   useEffect(() => {
     console.log('📄 [UserManagement] Page changed to:', currentPage)

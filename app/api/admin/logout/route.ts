@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Forward logout request to backend
-    const response = await fetch('http://localhost:3000/api/admin/logout', {
+    const response = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/logout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
