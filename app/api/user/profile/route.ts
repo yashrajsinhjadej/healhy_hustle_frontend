@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 [Profile API] Auth header:', authHeader ? 'Present' : 'Missing')
     
     // Fetch data from the real API endpoint
-    const response = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/dashboard', {
+    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

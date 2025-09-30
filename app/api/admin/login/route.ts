@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       console.log('🔐 [Login API] Forwarding login request to backend...')
       
       // Forward the login request to your backend
-      const backendResponse = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/login', {
+      const backendResponse = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_LOGIN), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

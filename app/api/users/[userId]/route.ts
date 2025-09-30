@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,7 @@ export async function GET(
     }
     
     // Call your backend API to get user details with cache busting
-    const backendUrl = `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}?_t=${Date.now()}`
+    const backendUrl = `${getBackendApiUrl(API_ENDPOINTS.ADMIN_USER_BY_ID(userId))}?_t=${Date.now()}`
     console.log('🔍 [User Detail API] Backend URL:', backendUrl)
     
     const response = await fetch(backendUrl, {
@@ -124,7 +125,7 @@ export async function PUT(
     console.log('🔍 [User Update API] Auth header:', authHeader ? 'Present' : 'Missing')
     
     // Call your backend API to update user
-    const backendUrl = `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}`
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_USER_BY_ID(userId))
     console.log('🔍 [User Update API] Backend URL:', backendUrl)
     
     const response = await fetch(backendUrl, {

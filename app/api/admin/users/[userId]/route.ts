@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -29,10 +30,12 @@ export async function PUT(
     if (authHeader) {
       console.log('✏️ [Update User API] Token preview:', authHeader.substring(0, 20) + '...')
     }
-    console.log('✏️ [Update User API] Backend URL:', `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}`)
+    
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_USER_BY_ID(userId))
+    console.log('✏️ [Update User API] Backend URL:', backendUrl)
     
     // Make PUT request to the backend API
-    const response = await fetch(`https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}`, {
+    const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -122,10 +125,12 @@ export async function DELETE(
     if (authHeader) {
       console.log('🗑️ [Delete User API] Token preview:', authHeader.substring(0, 20) + '...')
     }
-    console.log('🗑️ [Delete User API] Backend URL:', `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}`)
+    
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_USER_BY_ID(userId))
+    console.log('🗑️ [Delete User API] Backend URL:', backendUrl)
     
     // Make DELETE request to the backend API
-    const response = await fetch(`https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/users/${userId}`, {
+    const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

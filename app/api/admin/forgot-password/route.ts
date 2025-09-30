@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,10 +35,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📧 [Forgot Password API] Processing password reset request for:', email)
-    console.log('📧 [Forgot Password API] Backend URL: https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/forgot-password')
+    console.log('📧 [Forgot Password API] Backend URL:', getBackendApiUrl(API_ENDPOINTS.ADMIN_FORGOT_PASSWORD))
     
     // Forward request to backend
-    const response = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/forgot-password', {
+    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_FORGOT_PASSWORD), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

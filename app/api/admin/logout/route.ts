@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Forward logout request to backend
-    const response = await fetch('https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/logout', {
+    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_LOGOUT), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

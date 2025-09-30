@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -19,7 +20,6 @@ export async function GET(request: NextRequest) {
     if (authHeader) {
       console.log('🔍 [Users API] Token preview:', authHeader.substring(0, 20) + '...')
     }
-    console.log('🔍 [Users API] Backend URL: https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/dashboard')
     
     // Build query parameters for the dashboard API
     const dashboardParams = new URLSearchParams({
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       _t: Date.now().toString() // Cache busting parameter
     })
 
-    const backendUrl = `https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/dashboard?${dashboardParams}`
+    const backendUrl = `${getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD)}?${dashboardParams}`
     console.log('🔍 [Users API] Full backend URL:', backendUrl)
     console.log('🔍 [Users API] Request parameters:', { page, search, status })
 

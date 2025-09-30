@@ -11,7 +11,12 @@ const nextConfig = {
   // Optimize images for Vercel
   images: {
     unoptimized: false,
-    domains: ['health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app'],
+    domains: [
+      // Extract domain from backend URL environment variable
+      process.env.NEXT_PUBLIC_BACKEND_URL 
+        ? new URL(process.env.NEXT_PUBLIC_BACKEND_URL).hostname 
+        : 'health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app'
+    ],
   },
   // Enable experimental features for better performance
   experimental: {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 export async function GET(request: NextRequest) {
   try {
@@ -6,10 +7,10 @@ export async function GET(request: NextRequest) {
     
     // Test different possible backend URLs
     const possibleUrls = [
-      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
-      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
-      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
-      'https://health-hustle-j3bf2u5on-yashrajsinhjadejs-projects.vercel.app/api/admin/profile',
+      getBackendApiUrl(API_ENDPOINTS.ADMIN_PROFILE),
+      getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD),
+      getBackendApiUrl(API_ENDPOINTS.ADMIN_LOGIN),
+      getBackendApiUrl('/api/health'), // Health check endpoint if available
     ]
     
     const results = []
