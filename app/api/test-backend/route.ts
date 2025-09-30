@@ -3,7 +3,9 @@ import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🧪 [Test Backend] Testing backend connectivity...')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🧪 [Test Backend] Testing backend connectivity...')
+    }
     
     // Test different possible backend URLs
     const possibleUrls = [
@@ -17,7 +19,9 @@ export async function GET(request: NextRequest) {
     
     for (const url of possibleUrls) {
       try {
-        console.log(`🧪 [Test Backend] Testing URL: ${url}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🧪 [Test Backend] Testing URL: ${url}`)
+        }
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -32,7 +36,9 @@ export async function GET(request: NextRequest) {
           accessible: true
         })
         
-        console.log(`🧪 [Test Backend] ${url} - Status: ${response.status}, OK: ${response.ok}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🧪 [Test Backend] ${url} - Status: ${response.status}, OK: ${response.ok}`)
+        }
       } catch (error) {
         results.push({
           url,
@@ -42,7 +48,9 @@ export async function GET(request: NextRequest) {
           error: error instanceof Error ? error.message : 'Unknown error'
         })
         
-        console.log(`🧪 [Test Backend] ${url} - Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🧪 [Test Backend] ${url} - Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
       }
     }
     

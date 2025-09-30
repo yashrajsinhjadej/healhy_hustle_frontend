@@ -53,6 +53,7 @@ import {
   Plus
 } from "lucide-react"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
+import { devLog } from '@/lib/dev-log'
 import { useRouter } from "next/navigation"
 
 interface User {
@@ -121,7 +122,7 @@ export function UserManagement() {
       setIsLoading(true)
       setError("")
       
-      console.log('🔄 [UserManagement] Fetching users - Page:', page, 'Search:', search)
+      devLog.log('🔄 [UserManagement] Fetching users - Page:', page, 'Search:', search)
       
       const params = new URLSearchParams({
         page: page.toString(),
@@ -130,7 +131,7 @@ export function UserManagement() {
         _t: Date.now().toString() // Cache busting parameter
       })
 
-      console.log('🌐 [UserManagement] Making API call to:', `/api/users?${params}`)
+      devLog.log('🌐 [UserManagement] Making API call to:', `/api/users?${params}`)
       const response = await authenticatedFetch(`/api/users?${params}`, {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -449,18 +450,20 @@ export function UserManagement() {
 
   const startIndex = (currentPage - 1) * itemsPerPage
 
-  // Debug logging
-  console.log('🔍 [UserManagement] Current state:', {
-    users: users.length,
-    isLoading,
-    error,
-    searchTerm,
-    currentPage,
-    totalPages,
-    totalUsers,
-    stats,
-    itemsPerPage
-  })
+  // Debug logging - only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [UserManagement] Current state:', {
+      users: users.length,
+      isLoading,
+      error,
+      searchTerm,
+      currentPage,
+      totalPages,
+      totalUsers,
+      stats,
+      itemsPerPage
+    })
+  }
 
   return (
     <div className="flex min-h-screen bg-[#f4f5f6]">
