@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { toast } from '@/hooks/use-toast'
 import { authenticatedFetch, authUtils } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 import styles from './workouts-list.module.css'
 
 interface Workout {
@@ -167,7 +168,11 @@ export default function WorkoutsList() {
                     }}
                     disabled={deletingId === w._id}
                   >
-                    {deletingId === w._id ? 'Deleting...' : 'Delete'}
+                    {deletingId === w._id ? (
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Loader2 className="animate-spin" style={{ width: 18, height: 18 }} /> Deleting...
+                      </span>
+                    ) : 'Delete'}
                   </button>
                 </div>
               </div>

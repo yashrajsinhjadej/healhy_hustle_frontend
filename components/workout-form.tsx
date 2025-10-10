@@ -26,6 +26,10 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
     if (!form.name.trim()) { setErrorMsg('Name is required'); return }
     if (!form.duration || isNaN(Number(form.duration))) { setErrorMsg('Duration must be a number'); return }
     if (!form.level) { setErrorMsg('Level is required'); return }
+    if (!form.introduction.trim()) { setErrorMsg('Introduction is required'); return }
+    if (categories.length === 0 || categories.every(c => !c.trim())) { setErrorMsg('At least one category is required'); return }
+    if (!banner) { setErrorMsg('Banner image is required'); return }
+    if (!thumbnail) { setErrorMsg('Thumbnail image is required'); return }
 
     setIsSaving(true)
     try {
@@ -34,10 +38,10 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
       fd.append('level', form.level)
       fd.append('duration', String(Number(form.duration)))
       fd.append('introduction', form.introduction)
-    if (form.sequence) fd.append('sequence', String(Number(form.sequence)))
-    categories.forEach(c => c && fd.append('category[]', c))
-    if (banner) fd.append('banner', banner, banner.name)
-    if (thumbnail) fd.append('thumbnail', thumbnail, thumbnail.name)
+      if (form.sequence) fd.append('sequence', String(Number(form.sequence)))
+      categories.forEach(c => c && fd.append('category[]', c))
+      if (banner) fd.append('banner', banner, banner.name)
+      if (thumbnail) fd.append('thumbnail', thumbnail, thumbnail.name)
 
       const headers: Record<string,string> = { ...(authUtils.getAuthHeader() as Record<string,string>) }
 

@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { authUtils, type User } from "@/lib/auth"
 import { useState as useStateReact, useEffect } from "react"
 
@@ -41,20 +41,21 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
     router.push('/login')
   }
 
+  const pathname = usePathname();
   const menuItems = [
     {
       title: "User management",
       icon: Users,
       href: "/dashboard",
-      active: true,
+      active: pathname === "/dashboard",
     },
     {
       title: "Training session management",
       icon: GraduationCap,
       href: "/workouts",
-      active: false,
+      active: pathname === "/workouts",
     },
-  ]
+  ];
 
   const cmsItems = [
     { title: "About Us", icon: FileText, href: "/dashboard/cms/about" },
@@ -98,6 +99,7 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/50",
                   )}
+                  style={item.active ? { background: '#ff5a5f', color: '#fff' } : {}}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.title}

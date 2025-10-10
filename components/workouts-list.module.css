@@ -79,6 +79,14 @@
   font-family: Gotham, 'Helvetica Neue', Arial, sans-serif;
   font-weight: 500;
   font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+
+.btnDelete:hover:not(:disabled) {
+  background: #d32f2f;
+  color: #fff;
 }
 
 .loadMoreWrap { padding-top: 8px; }
