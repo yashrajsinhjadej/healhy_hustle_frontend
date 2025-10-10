@@ -52,7 +52,6 @@ export default function WorkoutsList() {
 
         if (res.status === 401) {
           authUtils.clearAuthData()
-          // Let caller handle redirect if needed
           return
         }
 
@@ -119,28 +118,25 @@ export default function WorkoutsList() {
   if (error) return <p className="text-center mt-8 text-red-500">{error}</p>
 
   return (
-    <div className={`${styles.workoutsWrapper} w-full`}>
-      <div className={styles.container}>
-        <div className={`${styles.cardGrid}`}>
+    <div className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {workouts.length > 0 ? (
           workouts.map((w) => (
-            <div key={w._id} className={`${styles.card}`}>
+            <div key={w._id} className="bg-white border border-[#E6E6E6] rounded-lg overflow-hidden flex flex-col">
               <img
                 src={w.thumbnailUrl || '/placeholder-user.jpg'}
                 alt={w.name}
-                className={styles.cardImage}
+                className="w-full h-48 object-cover object-center"
               />
-
-              <div className={styles.cardBody}>
-                <h3 className={styles.title}>{w.name}</h3>
-                <p className={styles.subtitle}>Category: {Array.isArray(w.category) ? w.category.join(', ') : String(w.category)}</p>
-                <p className={styles.subtitle}>Level: {w.level}</p>
-                <p className={styles.subtitle}>Duration: {w.duration} min</p>
-
-                <div className={styles.actions}>
-                  <button className={styles.btnEdit} onClick={() => console.log('edit', w._id)}>Edit</button>
+              <div className="flex-1 flex flex-col p-4">
+                <h3 className="text-lg font-semibold mb-1">{w.name}</h3>
+                <p className="text-sm text-gray-600 mb-1">Category: {Array.isArray(w.category) ? w.category.join(', ') : String(w.category)}</p>
+                <p className="text-sm text-gray-600 mb-1">Level: {w.level}</p>
+                <p className="text-sm text-gray-600 mb-4">Duration: {w.duration} min</p>
+                <div className="mt-auto flex gap-2">
+                  <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium" onClick={() => console.log('edit', w._id)}>Edit</button>
                   <button
-                    className={styles.btnDelete}
+                    className="px-4 py-2 rounded bg-gray-800 hover:bg-gray-900 text-white font-medium"
                     onClick={async () => {
                       const ok = confirm('Delete this workout? This action cannot be undone.')
                       if (!ok) return
@@ -156,7 +152,6 @@ export default function WorkoutsList() {
                           alert(err?.message || 'Failed to delete workout')
                           return
                         }
-                        // Remove from UI
                         setWorkouts((prev) => prev.filter(item => item._id !== w._id))
                         toast({ title: 'Workout was deleted' })
                       } catch (err) {
@@ -169,9 +164,7 @@ export default function WorkoutsList() {
                     disabled={deletingId === w._id}
                   >
                     {deletingId === w._id ? (
-                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        <Loader2 className="animate-spin" style={{ width: 18, height: 18 }} /> Deleting...
-                      </span>
+                      <span className="flex items-center gap-2"><Loader2 className="animate-spin w-4 h-4" /> Deleting...</span>
                     ) : 'Delete'}
                   </button>
                 </div>
@@ -181,10 +174,8 @@ export default function WorkoutsList() {
         ) : (
           <p>No workouts found.</p>
         )}
-        </div>
       </div>
-
-      <div className={`${styles.container}`}>
+      <div>
         {totalPages !== null && currentPage < totalPages ? (
           <div className="flex justify-center mt-6">
             <Button onClick={loadMore} disabled={loadingMore}>

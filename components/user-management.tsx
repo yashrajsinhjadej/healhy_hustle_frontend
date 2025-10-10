@@ -8,50 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { 
-  Download, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  ChevronLeft, 
-  ChevronRight, 
-  Loader2,
-  Filter,
-  User,
-  Dumbbell,
-  Grid3X3,
-  Info,
-  Phone,
-  FileText,
-  Shield,
-  LogOut,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  List,
-  ListOrdered,
-  Link,
-  Image,
-  Video,
-  Table as TableIcon,
-  Quote,
-  Undo,
-  Redo,
-  Save,
-  Type,
-  Palette,
-  Minus,
-  Plus
-} from "lucide-react"
+import { Download, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, Loader2, Filter, User, FileText, Palette, Minus, Plus, Italic, AlignCenter, Bold, Underline, Strikethrough, AlignLeft, AlignRight, AlignJustify, List, ListOrdered, Link, Image, Video, Table as TableIcon, Quote, Undo, Redo, Save, Type, Minus as MinusIcon, Plus as PlusIcon, X } from "lucide-react"
+import { SidebarAdmin } from "@/components/sidebar-admin"
+import { Navbar } from "@/components/navbar"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
 import WorkoutsList from './workouts-list'
 // Keep the modal component file in the repo, but the header now navigates to the full-page form
@@ -468,206 +427,17 @@ export function UserManagement() {
   }
 
   return (
+
     <div className="flex min-h-screen bg-[#f4f5f6]">
-      {/* Sidebar */}
-      <div className="w-60 bg-[#404040] text-white flex flex-col sticky top-0 h-screen">
-        {/* Logo */}
-        <div className="p-4">
-          <h1 className="text-xl font-bold text-white">TraynexX</h1>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 overflow-y-auto">
-          <div className="space-y-1">
-            <div 
-              className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
-                activeSection === 'user-management'
-                  ? 'bg-[#fc6c6c] text-white'
-                  : 'text-[#e6e6e6] hover:text-white'
-              }`}
-              onClick={() => {
-                setActiveSection('user-management')
-                setIsCmsDropdownOpen(false)
-                setActiveCmsPage(null)
-              }}
-            >
-              <User className="w-5 h-5" />
-              <span className="font-medium">User management</span>
-            </div>
-
-            <div
-              className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
-                activeSection === 'training'
-                  ? 'bg-[#fc6c6c] text-white'
-                  : 'text-[#e6e6e6] hover:text-white'
-              }`}
-              onClick={() => {
-                // Open Training inline inside the dashboard (do not navigate away)
-                setActiveSection('training')
-                setIsCmsDropdownOpen(false)
-                setActiveCmsPage(null)
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setActiveSection('training') } }}
-            >
-              <Dumbbell className="w-5 h-5" />
-              <span>Training session management</span>
-            </div>
-
-            {/* CMS Management Dropdown */}
-            <div className="space-y-1">
-              <div 
-                className={`px-4 py-2 flex items-center justify-between cursor-pointer transition-colors rounded-lg ${
-                  activeSection === 'cms-management'
-                    ? 'bg-[#fc6c6c] text-white' 
-                    : 'text-[#e6e6e6] hover:text-white'
-                }`}
-                onClick={toggleCmsDropdown}
-              >
-                <div className="flex items-center gap-3">
-                  <Grid3X3 className="w-5 h-5" />
-                  <span className="font-medium">CMS Management</span>
-                </div>
-                {isCmsDropdownOpen ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </div>
-              
-              {/* Dropdown Menu */}
-              {isCmsDropdownOpen && (
-                <div className="ml-6 space-y-1 animate-in slide-in-from-top-2 duration-200">
-                  <div 
-                    className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
-                      activeCmsPage === 'about-us'
-                        ? 'bg-[#fc6c6c] text-white'
-                        : 'text-[#b3b3b3] hover:text-white'
-                    }`}
-                    onClick={() => handleCmsNavigation('about-us')}
-                  >
-                    <Info className="w-4 h-4" />
-                    <span>About Us</span>
-                  </div>
-                  
-                  <div 
-                    className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
-                      activeCmsPage === 'contact-us'
-                        ? 'bg-[#fc6c6c] text-white'
-                        : 'text-[#b3b3b3] hover:text-white'
-                    }`}
-                    onClick={() => handleCmsNavigation('contact-us')}
-                  >
-                    <Phone className="w-4 h-4" />
-                    <span>Contact Us</span>
-                  </div>
-                  
-                  <div 
-                    className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
-                      activeCmsPage === 'terms-conditions'
-                        ? 'bg-[#fc6c6c] text-white'
-                        : 'text-[#b3b3b3] hover:text-white'
-                    }`}
-                    onClick={() => handleCmsNavigation('terms-conditions')}
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Terms & Conditions</span>
-                  </div>
-                  
-                  <div 
-                    className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
-                      activeCmsPage === 'privacy-policy'
-                        ? 'bg-[#fc6c6c] text-white'
-                        : 'text-[#b3b3b3] hover:text-white'
-                    }`}
-                    onClick={() => handleCmsNavigation('privacy-policy')}
-                  >
-                    <Shield className="w-4 h-4" />
-                    <span>Privacy Policy</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </nav>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-[#5e5e5e]">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src="/diverse-user-avatars.png" />
-              <AvatarFallback className="bg-[#7b7b7b] text-white">
-                {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : 'JD'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-medium text-white">
-                {userProfile?.name || 'johndeo34253'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Logout */}
-        <div className="p-4 border-t border-[#5e5e5e]">
-          <div 
-            className="px-4 py-2 flex items-center gap-3 text-[#e6e6e6] hover:text-white cursor-pointer transition-colors"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </div>
-        </div>
-      </div>
+      <SidebarAdmin />
 
       {/* Main Content */}
       <div className="flex-1">
-        {/* Header */}
-        <div className="bg-white px-8 py-6 border-b border-[#e1e1e1]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-[#000000]">
-              {activeSection === 'cms-management' 
-                ? `CMS Management (${activeCmsPage === 'about-us' ? 'About us' : activeCmsPage === 'contact-us' ? 'Contact us' : activeCmsPage === 'terms-conditions' ? 'Terms & Conditions' : activeCmsPage === 'privacy-policy' ? 'Privacy Policy' : 'CMS Management'})`
-                : `Good Morning, ${userProfile?.name || 'Johndeo34253'}`
-              }
-            </h2>
-              <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7b7b7b] w-4 h-4" />
-                <Input 
-                  placeholder="Search users..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-80 bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]" 
-                />
-              </div>
-              <Avatar className="w-10 h-10">
-                <AvatarImage src="/diverse-user-avatars.png" />
-                <AvatarFallback className="bg-[#7b7b7b] text-white">
-                  {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : 'JD'}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
-        </div>
+  <Navbar userProfile={userProfile ?? undefined} searchTerm={searchTerm} onSearch={e => setSearchTerm(e.target.value)} heading={`Good Morning, ${userProfile?.name || 'Johndeo34253'}`} />
 
         {/* Page Content */}
         <div className="p-4">
-          {activeSection === 'training' ? (
-            /* Training (Workouts) Content */
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h1 className="text-2xl font-semibold text-[#000000]">Training session management</h1>
-                <div className="flex items-center gap-2">
-                  <Button asChild className="ml-4 bg-[#000000] text-white hover:bg-[#212121]">
-                    <a href="/workouts/create">Create workoutsession</a>
-                  </Button>
-                </div>
-              </div>
-              <WorkoutsList />
-            </div>
-          ) : activeSection === 'cms-management' ? (
+          {activeSection === 'cms-management' ? (
             /* CMS Content */
             <div className="max-w-4xl mx-auto">
               <div className="bg-white border border-blue-200 rounded-lg p-6">
@@ -794,7 +564,7 @@ export function UserManagement() {
                             }}
                             title="Align right"
                             className="h-8 w-8 p-0"
-                          >
+                          > 
                             <AlignRight className="w-4 h-4" />
                           </Button>
                           <Button
