@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
+// This route reads request.headers (authorization) and must be dynamic.
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // 🔹 Call your backend API

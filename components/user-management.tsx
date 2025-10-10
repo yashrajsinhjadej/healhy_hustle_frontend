@@ -54,7 +54,7 @@ import {
 } from "lucide-react"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
 import WorkoutsList from './workouts-list'
-import CreateWorkoutModal from './create-workout-modal'
+// Keep the modal component file in the repo, but the header now navigates to the full-page form
 import { devLog } from '@/lib/dev-log'
 import { useRouter } from "next/navigation"
 
@@ -660,7 +660,9 @@ export function UserManagement() {
               <div className="mb-4 flex items-center justify-between">
                 <h1 className="text-2xl font-semibold text-[#000000]">Training session management</h1>
                 <div className="flex items-center gap-2">
-                  <CreateWorkoutModal />
+                  <Button asChild className="ml-4 bg-[#000000] text-white hover:bg-[#212121]">
+                    <a href="/workouts/create">Create workoutsession</a>
+                  </Button>
                 </div>
               </div>
               <WorkoutsList />

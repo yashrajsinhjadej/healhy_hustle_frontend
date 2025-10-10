@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { toast } from '@/hooks/use-toast'
 import { authenticatedFetch, authUtils } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import styles from './workouts-list.module.css'
@@ -36,6 +37,7 @@ export default function WorkoutsList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState<number | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -136,7 +138,37 @@ export default function WorkoutsList() {
 
                 <div className={styles.actions}>
                   <button className={styles.btnEdit} onClick={() => console.log('edit', w._id)}>Edit</button>
-                  <button className={styles.btnDelete} onClick={() => console.log('delete', w._id)}>Delete</button>
+                  <button
+                    className={styles.btnDelete}
+                    onClick={async () => {
+                      const ok = confirm('Delete this workout? This action cannot be undone.')
+                      if (!ok) return
+                      try {
+                        setDeletingId(w._id)
+                        const res = await authenticatedFetch(`/api/workout/admin/delete/${w._id}`, { method: 'DELETE' })
+                        if (res.status === 401) {
+                          authUtils.clearAuthData()
+                          return
+                        }
+                        if (!res.ok) {
+                          const err = await res.json().catch(() => ({ message: 'Failed to delete' }))
+                          alert(err?.message || 'Failed to delete workout')
+                          return
+                        }
+                        // Remove from UI
+                        setWorkouts((prev) => prev.filter(item => item._id !== w._id))
+                        toast({ title: 'Workout was deleted' })
+                      } catch (err) {
+                        console.error('Delete failed', err)
+                        alert('Failed to delete workout')
+                      } finally {
+                        setDeletingId(null)
+                      }
+                    }}
+                    disabled={deletingId === w._id}
+                  >
+                    {deletingId === w._id ? 'Deleting...' : 'Delete'}
+                  </button>
                 </div>
               </div>
             </div>
