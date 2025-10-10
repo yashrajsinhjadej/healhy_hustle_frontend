@@ -71,6 +71,10 @@ export const API_ENDPOINTS = {
   
   // User Profile
   ADMIN_PROFILE: '/api/admin/profile',
+
+  ADMIN_WORKOUTS_LIST: '/api/workout/user/listworkout',
+
+
 } as const
 
 export default {

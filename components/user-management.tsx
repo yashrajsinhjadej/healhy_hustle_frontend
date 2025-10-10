@@ -53,6 +53,7 @@ import {
   Plus
 } from "lucide-react"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
+import WorkoutsList from './workouts-list'
 import { devLog } from '@/lib/dev-log'
 import { useRouter } from "next/navigation"
 
@@ -109,7 +110,7 @@ export function UserManagement() {
   } | null>(null)
   const [isCmsDropdownOpen, setIsCmsDropdownOpen] = useState(false)
   const [activeCmsPage, setActiveCmsPage] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<'user-management' | 'cms-management'>('user-management')
+  const [activeSection, setActiveSection] = useState<'user-management' | 'cms-management' | 'training'>('user-management')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [cmsContent, setCmsContent] = useState('')
@@ -493,7 +494,22 @@ export function UserManagement() {
               <span className="font-medium">User management</span>
             </div>
 
-            <div className="px-4 py-2 flex items-center gap-3 text-[#e6e6e6] hover:text-white cursor-pointer">
+            <div
+              className={`px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg ${
+                activeSection === 'training'
+                  ? 'bg-[#fc6c6c] text-white'
+                  : 'text-[#e6e6e6] hover:text-white'
+              }`}
+              onClick={() => {
+                // Open Training inline inside the dashboard (do not navigate away)
+                setActiveSection('training')
+                setIsCmsDropdownOpen(false)
+                setActiveCmsPage(null)
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setActiveSection('training') } }}
+            >
               <Dumbbell className="w-5 h-5" />
               <span>Training session management</span>
             </div>
@@ -637,7 +653,10 @@ export function UserManagement() {
 
         {/* Page Content */}
         <div className="p-4">
-          {activeSection === 'cms-management' ? (
+          {activeSection === 'training' ? (
+            /* Training (Workouts) Content */
+            <WorkoutsList />
+          ) : activeSection === 'cms-management' ? (
             /* CMS Content */
             <div className="max-w-4xl mx-auto">
               <div className="bg-white border border-blue-200 rounded-lg p-6">

@@ -7,9 +7,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search') || ''
+  const page = parseInt(searchParams.get('page') || '1')
+  const limitParam = searchParams.get('limit') // forward exact param if present
+  const limit = limitParam ? parseInt(limitParam) : undefined
+  const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
 
     // Get authorization header from request
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     // Build query parameters for the dashboard API
     const dashboardParams = new URLSearchParams({
       page: page.toString(),
+      ...(limitParam && { limit: limitParam }),
       ...(search && { search }),
       ...(status && { status }),
       _t: Date.now().toString() // Cache busting parameter

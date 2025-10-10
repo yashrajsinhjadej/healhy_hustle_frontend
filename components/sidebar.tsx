@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
   Users,
-  GraduationCap,
+  GraduationCap,    
   Settings,
   FileText,
   Phone,
@@ -51,7 +51,7 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
     {
       title: "Training session management",
       icon: GraduationCap,
-      href: "/dashboard/training",
+      href: "/workouts",
       active: false,
     },
   ]
