@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { authenticatedFetch, authUtils } from '@/lib/auth'
+import { Button } from '@/components/ui/button'
+import styles from './workouts-list.module.css'
 
 interface Workout {
   _id: string
@@ -31,13 +33,19 @@ export default function WorkoutsList() {
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState<number | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    async function fetchWorkouts() {
+    async function fetchWorkouts(page = 1, append = false) {
       try {
+        if (append) setLoadingMore(true)
+        else setLoading(true)
         setError('')
-        const res = await authenticatedFetch('/api/workout/list')
+
+        const res = await authenticatedFetch(`/api/workout/list?page=${page}`)
 
         if (res.status === 401) {
           authUtils.clearAuthData()
@@ -52,46 +60,102 @@ export default function WorkoutsList() {
         }
 
         const list = data?.data?.workouts ?? []
-        if (mounted) setWorkouts(list)
+        const pagination = data?.data?.pagination
+        if (mounted) {
+          setTotalPages(pagination?.totalPages ?? null)
+          setCurrentPage(pagination?.currentPage ?? page)
+          setWorkouts((prev) => (append ? [...prev, ...list] : list))
+        }
       } catch (err) {
         if (mounted) setError('Something went wrong while fetching workouts.')
       } finally {
-        if (mounted) setLoading(false)
+        if (mounted) {
+          setLoading(false)
+          setLoadingMore(false)
+        }
       }
     }
 
-    fetchWorkouts()
+    fetchWorkouts(1, false)
     return () => { mounted = false }
   }, [])
+
+  async function loadMore() {
+    if (loadingMore) return
+    const next = currentPage + 1
+    if (totalPages !== null && next > totalPages) return
+    try {
+      setError('')
+      setLoadingMore(true)
+      const res = await authenticatedFetch(`/api/workout/list?page=${next}`)
+
+      if (res.status === 401) {
+        authUtils.clearAuthData()
+        return
+      }
+
+      const data: WorkoutsResponse = await res.json()
+      if (!res.ok) {
+        setError((data as any)?.error || 'Failed to fetch workouts')
+        return
+      }
+
+      const list = data?.data?.workouts ?? []
+      const pagination = data?.data?.pagination
+      setWorkouts((prev) => [...prev, ...list])
+      setCurrentPage(pagination?.currentPage ?? next)
+      setTotalPages(pagination?.totalPages ?? null)
+    } catch (err) {
+      setError('Something went wrong while fetching workouts.')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   if (loading) return <p className="text-center mt-8">Loading workouts...</p>
   if (error) return <p className="text-center mt-8 text-red-500">{error}</p>
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">Workouts</h1>
-      <div className="grid gap-4">
+    <div className={`${styles.workoutsWrapper} w-full`}>
+      <div className={styles.container}>
+        <div className={`${styles.cardGrid}`}>
         {workouts.length > 0 ? (
           workouts.map((w) => (
-            <div key={w._id} className="p-4 border rounded shadow-sm hover:shadow-md transition">
-              <div className="flex items-start gap-3">
-                {w.thumbnailUrl ? (
-                  <img src={w.thumbnailUrl} alt={w.name} className="w-20 h-20 object-cover rounded" />
-                ) : null}
-                <div>
-                  <h2 className="text-lg font-semibold">{w.name}</h2>
-                  <p className="text-sm text-gray-600">Category: {Array.isArray(w.category) ? w.category.join(', ') : String(w.category)}</p>
-                  <p className="text-sm text-gray-600">Level: {w.level}</p>
-                  <p className="text-sm text-gray-600">Duration: {w.duration} min</p>
-                  {typeof w.exerciseCount === 'number' && (
-                    <p className="text-sm text-gray-600">Exercises: {w.exerciseCount}</p>
-                  )}
+            <div key={w._id} className={`${styles.card}`}>
+              <img
+                src={w.thumbnailUrl || '/placeholder-user.jpg'}
+                alt={w.name}
+                className={styles.cardImage}
+              />
+
+              <div className={styles.cardBody}>
+                <h3 className={styles.title}>{w.name}</h3>
+                <p className={styles.subtitle}>Category: {Array.isArray(w.category) ? w.category.join(', ') : String(w.category)}</p>
+                <p className={styles.subtitle}>Level: {w.level}</p>
+                <p className={styles.subtitle}>Duration: {w.duration} min</p>
+
+                <div className={styles.actions}>
+                  <button className={styles.btnEdit} onClick={() => console.log('edit', w._id)}>Edit</button>
+                  <button className={styles.btnDelete} onClick={() => console.log('delete', w._id)}>Delete</button>
                 </div>
               </div>
             </div>
           ))
         ) : (
           <p>No workouts found.</p>
+        )}
+        </div>
+      </div>
+
+      <div className={`${styles.container}`}>
+        {totalPages !== null && currentPage < totalPages ? (
+          <div className="flex justify-center mt-6">
+            <Button onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-center mt-6 text-sm text-gray-500">{workouts.length > 0 ? 'End of results' : ''}</div>
         )}
       </div>
     </div>

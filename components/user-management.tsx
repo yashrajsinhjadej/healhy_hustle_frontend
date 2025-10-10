@@ -54,6 +54,7 @@ import {
 } from "lucide-react"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
 import WorkoutsList from './workouts-list'
+import CreateWorkoutModal from './create-workout-modal'
 import { devLog } from '@/lib/dev-log'
 import { useRouter } from "next/navigation"
 
@@ -469,7 +470,7 @@ export function UserManagement() {
   return (
     <div className="flex min-h-screen bg-[#f4f5f6]">
       {/* Sidebar */}
-      <div className="w-60 bg-[#404040] text-white flex flex-col h-screen">
+      <div className="w-60 bg-[#404040] text-white flex flex-col sticky top-0 h-screen">
         {/* Logo */}
         <div className="p-4">
           <h1 className="text-xl font-bold text-white">TraynexX</h1>
@@ -631,7 +632,7 @@ export function UserManagement() {
                 : `Good Morning, ${userProfile?.name || 'Johndeo34253'}`
               }
             </h2>
-            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7b7b7b] w-4 h-4" />
                 <Input 
@@ -655,7 +656,15 @@ export function UserManagement() {
         <div className="p-4">
           {activeSection === 'training' ? (
             /* Training (Workouts) Content */
-            <WorkoutsList />
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <h1 className="text-2xl font-semibold text-[#000000]">Training session management</h1>
+                <div className="flex items-center gap-2">
+                  <CreateWorkoutModal />
+                </div>
+              </div>
+              <WorkoutsList />
+            </div>
           ) : activeSection === 'cms-management' ? (
             /* CMS Content */
             <div className="max-w-4xl mx-auto">
