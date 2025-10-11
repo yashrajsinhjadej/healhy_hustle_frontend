@@ -1,5 +1,6 @@
-import { CmsManagement } from "@/components/cms-management";
+import { redirect } from 'next/navigation'
 
 export default function CmsPage() {
-  return <CmsManagement />;
+  // Redirect to About Us page by default
+  redirect('/cms/about')
 }

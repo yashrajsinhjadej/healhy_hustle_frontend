@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Dumbbell, Grid3X3, Video, LogOut } from "lucide-react"
+import { User, Dumbbell, Grid3X3, LogOut, ChevronDown, ChevronUp, Info, Phone, FileText, Shield } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useEffect, useState } from "react"
 import { authUtils, User as UserType } from "@/lib/auth"
@@ -10,13 +10,24 @@ import { cn } from "@/lib/utils"
 const sidebarItems = [
   { label: "User management", icon: User, href: "/dashboard" },
   { label: "Training session management", icon: Dumbbell, href: "/workouts" },
-  { label: "CMS Management", icon: Grid3X3, href: "/cms" },
+]
+
+const cmsItems = [
+  { label: "About Us", icon: Info, href: "/cms/about" },
+  { label: "Contact Us", icon: Phone, href: "/cms/contact" },
+  { label: "Terms & Conditions", icon: FileText, href: "/cms/terms" },
+  { label: "Privacy Policy", icon: Shield, href: "/cms/privacy" },
 ]
 
 export function SidebarAdmin() {
   const router = useRouter()
   const pathname = usePathname()
   const [userProfile, setUserProfile] = useState<UserType | null>(null)
+  const [isCmsOpen, setIsCmsOpen] = useState(false)
+
+  // Check if we're on a CMS route
+  const isOnCmsRoute = pathname.startsWith('/cms')
+  const isOnMainCmsRoute = pathname === '/cms'
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -35,6 +46,24 @@ export function SidebarAdmin() {
     }
     fetchUserProfile()
   }, [])
+
+  // Auto-open CMS dropdown when on CMS routes
+  useEffect(() => {
+    if (isOnCmsRoute) {
+      setIsCmsOpen(true)
+    }
+  }, [isOnCmsRoute])
+
+  const handleCmsClick = () => {
+    if (isOnCmsRoute) {
+      // If already on CMS route, just toggle dropdown
+      setIsCmsOpen(!isCmsOpen)
+    } else {
+      // If not on CMS route, navigate to /cms and open dropdown
+      setIsCmsOpen(true)
+      router.push('/cms')
+    }
+  }
 
   const handleLogout = () => {
     authUtils.clearAuthData()
@@ -71,6 +100,59 @@ export function SidebarAdmin() {
               </div>
             )
           })}
+
+          {/* CMS Management Dropdown */}
+          <div className="space-y-1">
+            <div
+              className={cn(
+                "px-4 py-2 flex items-center justify-between cursor-pointer transition-colors rounded-lg",
+                isOnCmsRoute
+                  ? "bg-[#fc6c6c] text-white"
+                  : "text-[#e6e6e6] hover:text-white"
+              )}
+              onClick={handleCmsClick}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleCmsClick() }}
+            >
+              <div className="flex items-center gap-3">
+                <Grid3X3 className="w-5 h-5" />
+                <span className="font-medium">CMS Management</span>
+              </div>
+              {isCmsOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </div>
+            
+            {/* CMS Dropdown Menu */}
+            {isCmsOpen && (
+              <div className="ml-6 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                {cmsItems.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <div
+                      key={item.href}
+                      className={cn(
+                        "px-4 py-2 flex items-center gap-3 cursor-pointer transition-colors rounded-lg",
+                        isActive
+                          ? "bg-[#fc6c6c] text-white"
+                          : "text-[#b3b3b3] hover:text-white"
+                      )}
+                      onClick={() => router.push(item.href)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") router.push(item.href) }}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </nav>
       {/* User Profile */}

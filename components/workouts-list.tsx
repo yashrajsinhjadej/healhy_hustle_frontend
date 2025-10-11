@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from '@/hooks/use-toast'
 import { authenticatedFetch, authUtils } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ interface WorkoutsResponse {
 }
 
 export default function WorkoutsList() {
+  const router = useRouter()
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -114,6 +116,10 @@ export default function WorkoutsList() {
     }
   }
 
+  function handleWorkoutClick(workoutId: string) {
+    router.push(`/workouts/${workoutId}`)
+  }
+
   if (loading) return <p className="text-center mt-8">Loading workouts...</p>
   if (error) return <p className="text-center mt-8 text-red-500">{error}</p>
 
@@ -122,7 +128,11 @@ export default function WorkoutsList() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {workouts.length > 0 ? (
           workouts.map((w) => (
-            <div key={w._id} className="bg-white border border-[#E6E6E6] rounded-lg overflow-hidden flex flex-col">
+            <div 
+              key={w._id} 
+              className="bg-white border border-[#E6E6E6] rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleWorkoutClick(w._id)}
+            >
               <img
                 src={w.thumbnailUrl || '/placeholder-user.jpg'}
                 alt={w.name}

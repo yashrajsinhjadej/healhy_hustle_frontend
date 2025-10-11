@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     // Forward login request directly to backend for validation
     try {
       console.log('🔐 [Login API] Forwarding login request to backend...')
-      
+
+      console.log('🔐 [Login API] Backend URL:', getBackendApiUrl(API_ENDPOINTS.ADMIN_LOGIN))
       // Forward the login request to your backend
       const backendResponse = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_LOGIN), {
         method: 'POST',
