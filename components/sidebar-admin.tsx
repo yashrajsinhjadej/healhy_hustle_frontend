@@ -80,7 +80,10 @@ export function SidebarAdmin() {
       <nav className="flex-1 px-4 overflow-y-auto">
         <div className="space-y-1">
           {sidebarItems.map((item) => {
-            const isActive = pathname === item.href
+            // Make 'Training session management' active for all /workouts subroutes
+            const isActive = item.href === '/workouts'
+              ? pathname.startsWith('/workouts')
+              : pathname === item.href;
             return (
               <div
                 key={item.href}

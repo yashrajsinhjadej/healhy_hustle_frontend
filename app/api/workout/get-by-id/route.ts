@@ -23,36 +23,43 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
 
     // Forward request to backend
-    const backendResponse = await fetch(getBackendApiUrl('/api/workout/user/getworkoutbyid'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(authHeader && { 'Authorization': authHeader }),
-      },
-      body: JSON.stringify({ workoutId }),
-      cache: 'no-store', // prevents caching
-    })
+    const backendResponse = await fetch(
+      getBackendApiUrl('/api/workout/user/getworkoutbyid'),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authHeader && { Authorization: authHeader }),
+        },
+        body: JSON.stringify({ workoutId }),
+        cache: 'no-store', // prevents caching
+      }
+    )
 
-    console.log('🏋️ [Get Workout By ID] Backend response status:', backendResponse.status)
+    console.log(
+      '🏋️ [Get Workout By ID] Backend response status:',
+      backendResponse.status
+    )
+
+    const backendData = await backendResponse.json()
 
     if (backendResponse.ok) {
-      const workoutData = await backendResponse.json()
-      console.log('✅ [Get Workout By ID] Workout data received:', workoutData)
-      
+      console.log('✅ [Get Workout By ID] Workout data received:', backendData)
+
+      // Send only the actual workout object to frontend
       return NextResponse.json({
         success: true,
-        data: workoutData,
-        message: 'Workout retrieved successfully'
+        data: backendData.data, // <- unwrapped
+        message: backendData.message || 'Workout retrieved successfully',
       })
     } else {
-      const errorData = await backendResponse.json()
-      console.log('❌ [Get Workout By ID] Backend error:', errorData)
-      
+      console.log('❌ [Get Workout By ID] Backend error:', backendData)
+
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: errorData.error || errorData.message || 'Failed to retrieve workout',
-          message: 'Failed to retrieve workout'
+          error: backendData.error || backendData.message || 'Failed to retrieve workout',
+          message: 'Failed to retrieve workout',
         },
         { status: backendResponse.status }
       )
@@ -60,10 +67,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ [Get Workout By ID] Error:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Internal server error',
-        message: 'Failed to retrieve workout'
+        message: 'Failed to retrieve workout',
       },
       { status: 500 }
     )

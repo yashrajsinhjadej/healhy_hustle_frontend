@@ -25,15 +25,16 @@ interface WorkoutResponse {
 }
 
 export default function WorkoutDetailsPage() {
-  const params = useParams()
-  const router = useRouter()
-  const workoutId = params.id as string
-  
-  const [workout, setWorkout] = useState<WorkoutData | null>(null)
-  const [userProfile, setUserProfile] = useState<UserType | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
+  const params = useParams();
+  const router = useRouter();
+  const workoutId = params.id as string;
+  console.log("Params:", params, "WorkoutId:", workoutId);
+
+  const [workout, setWorkout] = useState<WorkoutData | null>(null);
+  const [userProfile, setUserProfile] = useState<UserType | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // Fetch workout details
   useEffect(() => {
@@ -50,13 +51,15 @@ export default function WorkoutDetailsPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ workoutId }),
-        })
-
+        });
+        console.log("[API] Response status:", response.status, "ok:", response.ok);
+        const data: WorkoutResponse = await response.json();
+        console.log("[API] Response JSON:", data);
         if (response.ok) {
-          const data: WorkoutResponse = await response.json()
-          setWorkout(data.data)
+          setWorkout(data.data);
+          console.log("[setWorkout] Setting workout to:", data.data);
         } else {
-          setError('Failed to fetch workout details')
+          setError('Failed to fetch workout details');
         }
       } catch (error) {
         setError('Error loading workout')
