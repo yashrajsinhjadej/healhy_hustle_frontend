@@ -89,12 +89,13 @@ export const WorkoutVideos = ({
 
   return (
     <div className="px-6 pb-6 pt-0">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 mt-8">
         <h2 className="text-xl font-semibold text-gray-900">Exercise Videos</h2>
         <Button
           variant="default"
           className="bg-black text-white hover:bg-gray-900"
           onClick={() => {
+            console.log('Add Video clicked, workoutId:', workoutId)
             if (!workoutId) {
               alert("Missing workoutId to create video.")
               return

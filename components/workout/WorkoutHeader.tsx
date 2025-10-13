@@ -29,17 +29,8 @@ export const WorkoutHeader = ({
 
   return (
     <div className="mb-6">
-      <Button
-        variant="ghost"
-        onClick={handleBack}
-        className="mb-4 p-0 text-gray-600 hover:text-gray-900"
-      >
-        <ChevronLeft className="w-4 h-4 mr-1" />
-        Back to workouts
-      </Button>
-
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{name}</h1>
-
+  <div className="font-extrabold text-2xl text-gray-800 mb-1">Training Session Management</div>
+  <h1 className="text-xl font-semibold text-gray-900 mb-2 mt-6">{name}</h1>
       <div className="flex items-center gap-6 text-sm text-gray-600">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-gray-500" />
