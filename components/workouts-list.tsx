@@ -128,8 +128,8 @@ export default function WorkoutsList() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {workouts.length > 0 ? (
           workouts.map((w) => (
-            <div 
-              key={w._id} 
+            <div
+              key={w._id}
               className="bg-white border border-[#E6E6E6] rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleWorkoutClick(w._id)}
             >
@@ -140,14 +140,26 @@ export default function WorkoutsList() {
               />
               <div className="flex-1 flex flex-col p-4">
                 <h3 className="text-lg font-semibold mb-1">{w.name}</h3>
-                <p className="text-sm text-gray-600 mb-1">Category: {Array.isArray(w.category) ? w.category.join(', ') : String(w.category)}</p>
+                <p className="text-sm text-gray-600 mb-1">
+                  Category: {Array.isArray(w.category) ? w.category.join(', ') : String(w.category)}
+                </p>
                 <p className="text-sm text-gray-600 mb-1">Level: {w.level}</p>
                 <p className="text-sm text-gray-600 mb-4">Duration: {w.duration} min</p>
                 <div className="mt-auto flex gap-2">
-                  <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium" onClick={() => console.log('edit', w._id)}>Edit</button>
+                  <button
+                    className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      console.log('edit', w._id)
+                      // TODO: router.push(`/workouts/${w._id}/edit`) when you add edit route
+                    }}
+                  >
+                    Edit
+                  </button>
                   <button
                     className="px-4 py-2 rounded bg-gray-800 hover:bg-gray-900 text-white font-medium"
-                    onClick={async () => {
+                    onClick={async (e) => {
+                      e.stopPropagation() // prevent card navigation to /workouts/:id
                       const ok = confirm('Delete this workout? This action cannot be undone.')
                       if (!ok) return
                       try {
@@ -174,7 +186,9 @@ export default function WorkoutsList() {
                     disabled={deletingId === w._id}
                   >
                     {deletingId === w._id ? (
-                      <span className="flex items-center gap-2"><Loader2 className="animate-spin w-4 h-4" /> Deleting...</span>
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="animate-spin w-4 h-4" /> Deleting...
+                      </span>
                     ) : 'Delete'}
                   </button>
                 </div>
@@ -193,7 +207,9 @@ export default function WorkoutsList() {
             </Button>
           </div>
         ) : (
-          <div className="flex justify-center mt-6 text-sm text-gray-500">{workouts.length > 0 ? 'End of results' : ''}</div>
+          <div className="flex justify-center mt-6 text-sm text-gray-500">
+            {workouts.length > 0 ? 'End of results' : ''}
+          </div>
         )}
       </div>
     </div>
