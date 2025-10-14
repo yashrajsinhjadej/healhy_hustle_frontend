@@ -151,7 +151,7 @@ export default function WorkoutsList() {
                     onClick={(e) => {
                       e.stopPropagation()
                       console.log('edit', w._id)
-                      // TODO: router.push(`/workouts/${w._id}/edit`) when you add edit route
+                      router.push(`/workouts/edit?id=${encodeURIComponent(w._id)}`)
                     }}
                   >
                     Edit
