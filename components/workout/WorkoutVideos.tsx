@@ -1,4 +1,5 @@
 // components/workout/WorkoutVideos.tsx
+
 "use client"
 
 import { useRouter } from "next/navigation"
@@ -95,7 +96,6 @@ export const WorkoutVideos = ({
           variant="default"
           className="bg-black text-white hover:bg-gray-900"
           onClick={() => {
-            console.log('Add Video clicked, workoutId:', workoutId)
             if (!workoutId) {
               alert("Missing workoutId to create video.")
               return
@@ -151,7 +151,11 @@ export const WorkoutVideos = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation()
-                      // Edit button is already handled elsewhere in your project
+                      if (!workoutId) {
+                        alert("Missing workoutId to edit video.")
+                        return
+                      }
+                      router.push(`/workouts/${workoutId}/video/edit?videoId=${encodeURIComponent(v._id)}`)
                     }}
                     className="w-full gap-1 text-gray-700 border-gray-300 hover:bg-gray-50"
                   >
