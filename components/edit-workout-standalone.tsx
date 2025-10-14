@@ -41,6 +41,12 @@ export default function EditWorkoutStandalone() {
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Field-level error messages
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [durationError, setDurationError] = useState<string | null>(null);
+  const [sequenceError, setSequenceError] = useState<string | null>(null);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
 
@@ -54,7 +60,6 @@ export default function EditWorkoutStandalone() {
           return;
         }
 
-        // Use the correct proxy route path
         const res = await authenticatedFetch("/api/workout/get-by-id", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,7 +78,6 @@ export default function EditWorkoutStandalone() {
           return;
         }
 
-        // Expect { success: true, data: workout }
         const w: WorkoutDTO = (data?.data as WorkoutDTO) ?? (data as WorkoutDTO);
         if (!w || !w._id) {
           setError("Workout not found.");
@@ -82,7 +86,6 @@ export default function EditWorkoutStandalone() {
 
         if (!mounted) return;
 
-        // Prefill
         setName(w.name || "");
         const lvl = ["beginner", "intermediate", "advanced"].includes(w.level)
           ? (w.level as "beginner" | "intermediate" | "advanced")
@@ -118,20 +121,65 @@ export default function EditWorkoutStandalone() {
   const removeCategory = (index: number) =>
     setCategories(prev => prev.filter((_, i) => i !== index));
 
-  const validate = (): string | null => {
-    if (!name.trim()) return "Name is required";
-    if (!duration || isNaN(Number(duration))) return "Duration must be a number";
+  // Real-time minimal validation
+  useEffect(() => {
+    setNameError(!name.trim() ? "Name is required" : null);
+  }, [name]);
+
+  useEffect(() => {
+    const n = Number(duration);
+    if (!duration.trim()) {
+      setDurationError("Duration is required");
+    } else if (isNaN(n)) {
+      setDurationError("Duration must be a number");
+    } else if (n <= 0) {
+      setDurationError("Duration must be greater than 0");
+    } else {
+      setDurationError(null);
+    }
+  }, [duration]);
+
+  useEffect(() => {
+    if (!sequence.trim()) {
+      // Optional field: no error if empty
+      setSequenceError(null);
+      return;
+    }
+    const s = Number(sequence);
+    if (isNaN(s)) {
+      setSequenceError("Sequence must be a number");
+    } else if (s <= 0) {
+      setSequenceError("Sequence must be greater than 0");
+    } else {
+      setSequenceError(null);
+    }
+  }, [sequence]);
+
+  useEffect(() => {
+    if (categories.length === 0 || categories.every(c => !c.trim())) {
+      setCategoriesError("At least one category is required");
+    } else {
+      setCategoriesError(null);
+    }
+  }, [categories]);
+
+  const validateForm = (): string | null => {
+    // Aggregate validation to block submit
+    if (nameError) return nameError;
+    if (durationError) return durationError;
+    if (sequenceError) return sequenceError;
+    if (categoriesError) return categoriesError;
     if (!level) return "Level is required";
     if (!introduction.trim()) return "Introduction is required";
-    if (categories.length === 0 || categories.every(c => !c.trim())) return "At least one category is required";
     return null;
   };
 
   const handleSave = async () => {
     setError(null);
-    const err = validate();
-    if (err) {
-      setError(err);
+
+    const blockingError = validateForm();
+    if (blockingError) {
+      setError(blockingError);
       return;
     }
     if (!workoutId) {
@@ -142,13 +190,15 @@ export default function EditWorkoutStandalone() {
     setSaving(true);
     try {
       const fd = new FormData();
-      fd.append("name", name);
+      fd.append("name", name.trim());
       fd.append("level", level);
       fd.append("duration", String(Number(duration)));
-      fd.append("introduction", introduction);
-      if (sequence) fd.append("sequence", String(Number(sequence)));
+      fd.append("introduction", introduction.trim());
+      if (sequence.trim()) fd.append("sequence", String(Number(sequence)));
+
       categories.forEach(c => {
-        if (c && c.trim()) fd.append("category[]", c.trim());
+        const v = c.trim();
+        if (v) fd.append("category[]", v);
       });
 
       if (bannerFile) fd.append("banner", bannerFile, bannerFile.name);
@@ -200,18 +250,28 @@ export default function EditWorkoutStandalone() {
       <div className="space-y-4">
         <div>
           <Label>Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Workout name" />
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Workout name"
+          />
+          {nameError && <p className="mt-1 text-sm text-red-600">{nameError}</p>}
         </div>
 
         <div>
           <Label>Category (add multiple)</Label>
           {categories.map((c, i) => (
             <div key={i} className="flex gap-2 mb-2">
-              <Input value={c} onChange={(e) => updateCategory(i, e.target.value)} />
+              <Input
+                value={c}
+                onChange={(e) => updateCategory(i, e.target.value)}
+                placeholder="Category"
+              />
               <Button variant="outline" onClick={() => removeCategory(i)}>Remove</Button>
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={addCategory}>Add category</Button>
+          {categoriesError && <p className="mt-1 text-sm text-red-600">{categoriesError}</p>}
         </div>
 
         <div>
@@ -229,17 +289,31 @@ export default function EditWorkoutStandalone() {
 
         <div>
           <Label>Duration (minutes)</Label>
-          <Input value={duration} onChange={(e) => setDuration(e.target.value)} />
+          <Input
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="e.g., 30"
+          />
+          {durationError && <p className="mt-1 text-sm text-red-600">{durationError}</p>}
         </div>
 
         <div>
           <Label>Introduction</Label>
-          <Input value={introduction} onChange={(e) => setIntroduction(e.target.value)} />
+          <Input
+            value={introduction}
+            onChange={(e) => setIntroduction(e.target.value)}
+            placeholder="Short intro"
+          />
         </div>
 
         <div>
           <Label>Sequence</Label>
-          <Input value={sequence} onChange={(e) => setSequence(e.target.value)} />
+          <Input
+            value={sequence}
+            onChange={(e) => setSequence(e.target.value)}
+            placeholder="e.g., 1"
+          />
+          {sequenceError && <p className="mt-1 text-sm text-red-600">{sequenceError}</p>}
         </div>
 
         <div>
@@ -284,7 +358,7 @@ export default function EditWorkoutStandalone() {
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => window.history.back()}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || !!nameError || !!durationError || !!sequenceError || !!categoriesError}>
             {saving ? 'Saving...' : (
               <>
                 <Save className="w-4 h-4 mr-2" />
