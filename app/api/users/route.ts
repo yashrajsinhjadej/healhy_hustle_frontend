@@ -1,41 +1,42 @@
+// app/api/users/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
-// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-  const page = parseInt(searchParams.get('page') || '1')
-  const limitParam = searchParams.get('limit') // forward exact param if present
-  const limit = limitParam ? parseInt(limitParam) : undefined
-  const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || ''
 
-    // Get authorization header from request
+    // Core pagination + search
+    const page = searchParams.get('page') || '1'
+    const limit = searchParams.get('limit') || '' // pass-through if provided
+    const search = searchParams.get('search') || ''
+
+    // Minimal filters
+    const status = searchParams.get('status') || ''          // 'active' | 'inactive'
+    const gender = searchParams.get('gender') || ''          // 'male' | 'female' | 'other'
+    const age_min = searchParams.get('age_min') || ''        // number string
+    const age_max = searchParams.get('age_max') || ''        // number string
+    const profileCompleted = searchParams.get('profileCompleted') || '' // get it from URL
+
     const authHeader = request.headers.get('authorization')
-    
-    console.log('🔍 [Users API] Making request to backend...')
-    console.log('🔍 [Users API] Auth header:', authHeader ? 'Present' : 'Missing')
-    if (authHeader) {
-      console.log('🔍 [Users API] Token preview:', authHeader.substring(0, 20) + '...')
-    }
-    
-    // Build query parameters for the dashboard API
-    const dashboardParams = new URLSearchParams({
-      page: page.toString(),
-      ...(limitParam && { limit: limitParam }),
+
+    // Build querystring for backend dashboard controller
+    const qs = new URLSearchParams({
+      page,
+      ...(limit && { limit }),
       ...(search && { search }),
       ...(status && { status }),
-      _t: Date.now().toString() // Cache busting parameter
+      ...(gender && { gender }),
+      ...(age_min && { age_min }),
+      ...(age_max && { age_max }),
+      ...(profileCompleted && { profileCompleted }),
+      _t: Date.now().toString(), // cache busting
     })
 
-    const backendUrl = `${getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD)}?${dashboardParams}`
-    console.log('🔍 [Users API] Full backend URL:', backendUrl)
-    console.log('🔍 [Users API] Request parameters:', { page, search, status })
+    const backendUrl = `${getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD)}?${qs.toString()}`
 
-    // Fetch data from the real API endpoint with pagination
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
@@ -43,78 +44,61 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
-        ...(authHeader && { 'Authorization': authHeader }),
+        ...(authHeader && { Authorization: authHeader }),
       },
     })
 
-    console.log('🔍 [Users API] Backend response status:', response.status)
-    console.log('🔍 [Users API] Backend response ok:', response.ok)
-
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [Users API] Backend error response:', errorText)
-      
-      // If it's a 401 error, forward it to the frontend for session handling
       if (response.status === 401) {
         try {
           const errorData = JSON.parse(errorText)
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               error: errorData.error || errorData.message || 'Session expired',
-              message: errorData.message || errorData.error || 'Session expired'
+              message: errorData.message || errorData.error || 'Session expired',
             },
             { status: 401 }
           )
-        } catch (parseError) {
+        } catch {
           return NextResponse.json(
-            { 
-              success: false, 
-              error: 'Session expired',
-              message: 'Session expired'
-            },
+            { success: false, error: 'Session expired', message: 'Session expired' },
             { status: 401 }
           )
         }
       }
-      
-      throw new Error(`Failed to fetch data from admin dashboard API: ${response.status} - ${errorText}`)
+      return NextResponse.json(
+        { error: `Failed to fetch dashboard: ${response.status} - ${errorText}` },
+        { status: response.status }
+      )
     }
 
     const apiData = await response.json()
-    console.log('🔍 [Users API] Raw backend response:', JSON.stringify(apiData, null, 2))
-    
-    // Use the backend's pagination data directly
     const users = apiData.data?.users || []
     const pagination = apiData.data?.pagination || {}
     const stats = apiData.data?.stats || {}
-    
-    console.log('🔍 [Users API] Backend pagination:', pagination)
-    console.log('🔍 [Users API] Backend stats:', stats)
-    console.log('🔍 [Users API] Users count:', users.length)
 
     return NextResponse.json({
       success: true,
       data: {
-        users: users,
+        users,
         pagination: {
-          currentPage: pagination.currentPage || page,
-          totalPages: pagination.totalPages || 1,
-          totalUsers: pagination.totalUsers || 0,
-          hasNextPage: pagination.hasNextPage || false,
-          hasPrevPage: pagination.hasPrevPage || false
+          currentPage: pagination.currentPage ?? Number(page),
+          totalPages: pagination.totalPages ?? 1,
+          totalUsers: pagination.totalUsers ?? 0,
+          hasNextPage: pagination.hasNextPage ?? false,
+          hasPrevPage: pagination.hasPrevPage ?? false,
         },
-        stats: stats
-      }
+        stats,
+      },
     })
   } catch (error) {
-    console.error('❌ [Users API] Error fetching users:', error)
-    if (error instanceof Error) {
-      console.error('❌ [Users API] Error message:', error.message)
-      console.error('❌ [Users API] Error stack:', error.stack)
-    }
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }
