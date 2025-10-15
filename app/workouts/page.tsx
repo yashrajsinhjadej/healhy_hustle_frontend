@@ -1,6 +1,6 @@
 "use client"
 import { SidebarAdmin } from '@/components/sidebar-admin'
-import WorkoutsList from '@/components/workouts-list'
+import WorkoutsList from '@/components/workout/workouts-list'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/navbar'
 import { useState, useEffect } from 'react'

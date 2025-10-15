@@ -1,0 +1,1 @@
+// for now we have that file in one big file inside workouts/:id/videos/page.tsx in future we would simplify this 

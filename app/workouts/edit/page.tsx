@@ -1,7 +1,7 @@
 // app/workouts/edit/page.tsx
 
 import React from "react";
-import EditWorkoutStandalone from "@/components/edit-workout-standalone";
+import EditWorkoutStandalone from "@/components/workout/edit-workout-standalone";
 
 export default function EditWorkoutRoutePage() {
   return (

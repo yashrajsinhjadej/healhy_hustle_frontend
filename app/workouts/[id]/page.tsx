@@ -7,10 +7,10 @@ import { useParams, useRouter } from "next/navigation"
 import { SidebarAdmin } from "@/components/sidebar-admin"
 import { Navbar } from "@/components/navbar"
 import { authenticatedFetch, authUtils, User as UserType } from "@/lib/auth"
-import { WorkoutHeader, WorkoutVideos } from "@/components/workout"
-import { WorkoutBanner } from "@/components/workout/WorkoutBanner"
-import { WorkoutDescription } from "@/components/workout/WorkoutDescription"
-import { WorkoutSummary } from "@/components/workout/WorkoutSummary"
+import { WorkoutHeader, WorkoutVideos } from "@/components/workoutID"
+import { WorkoutBanner } from "@/components/workoutID/WorkoutBanner"
+import { WorkoutDescription } from "@/components/workoutID/WorkoutDescription"
+import { WorkoutSummary } from "@/components/workoutID/WorkoutSummary"
 
 export default function WorkoutDetailsPage() {
   const params = useParams()

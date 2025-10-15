@@ -1,4 +1,4 @@
-import { EditUserForm } from "@/components/edit-user-form"
+import { EditUserForm } from "@/components/User/edit-user-form"
 
 interface EditUserPageProps {
   params: {

@@ -1,7 +1,7 @@
 // app/workouts/[id]/video/edit/page.tsx
 
 import React from "react";
-import EditWorkoutVideos from "@/components/edit-workout-videos";
+import EditWorkoutVideos from "@/components/workoutvideo/edit-workout-videos";
 
 export default function EditWorkoutVideosRoute() {
   return (
