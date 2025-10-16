@@ -13,9 +13,10 @@ interface NavbarProps {
   onSearch: (e: React.ChangeEvent<HTMLInputElement>) => void;
   searchTerm: string;
   heading: string;
+  placeholder:string
 }
 
-export function Navbar({ userProfile, onSearch, searchTerm, heading }: NavbarProps) {
+export function Navbar({ userProfile, onSearch, searchTerm, heading ,placeholder}: NavbarProps) {
   return (
     <div className="bg-white px-8 py-6 border-b border-[#e1e1e1]">
       <div className="flex items-center justify-between">
@@ -26,7 +27,8 @@ export function Navbar({ userProfile, onSearch, searchTerm, heading }: NavbarPro
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7b7b7b] w-4 h-4" />
             <Input
-              placeholder={heading?.toLowerCase().includes('user') ? 'Search users...' : 'Search workouts...'}
+              placeholder={placeholder}
+              
               value={searchTerm}
               onChange={onSearch}
               className="pl-10 w-80 bg-[#f1f2f3] border-[#e1e1e1] text-[#000000]"

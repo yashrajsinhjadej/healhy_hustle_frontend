@@ -263,6 +263,7 @@ export function UserManagement() {
           searchTerm={searchTerm}
           onSearch={(e) => setSearchTerm(e.target.value)}
           heading={`Good Morning, ${userProfile?.name || "Johndeo34253"}`}
+          placeholder='search user'
         />
         <div className="p-4">
           {/* Page Header */}

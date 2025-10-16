@@ -40,6 +40,7 @@ export default function WorkoutsPage() {
           searchTerm={searchTerm}
           onSearch={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
           heading={`Good Morning, ${userProfile?.name || 'Johndeo34253'}`}
+          placeholder='search workouts'
         />
   <div className="max-w-[1600px] mx-auto bg-white rounded-lg shadow p-8 mt-8">
           <div className="flex items-center justify-between mb-6">
