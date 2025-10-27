@@ -17,6 +17,7 @@ export default function PrivacyPolicyPage() {
           searchTerm={searchTerm} 
           onSearch={(e) => setSearchTerm(e.target.value)} 
           heading="CMS Management (Privacy Policy)" 
+          placeholder='privacy'
         />
         <div className="p-4">
           <div className="max-w-4xl mx-auto">

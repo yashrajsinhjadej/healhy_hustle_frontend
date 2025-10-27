@@ -114,7 +114,7 @@ export default function AboutUsPage() {
           searchTerm={searchTerm}
           onSearch={(e) => setSearchTerm(e.target.value)}
           heading="CMS Management (About us)"
-        />
+          placeholder='contactus'        />
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white border border-blue-200 rounded-lg p-6">

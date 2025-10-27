@@ -17,6 +17,7 @@ export default function TermsConditionsPage() {
           searchTerm={searchTerm} 
           onSearch={(e) => setSearchTerm(e.target.value)} 
           heading="CMS Management (Terms & Conditions)" 
+          placeholder='terms'
         />
         <div className="p-4">
           <div className="max-w-4xl mx-auto">

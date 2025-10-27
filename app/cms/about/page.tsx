@@ -18,6 +18,7 @@ export default function AboutUsPage() {
           searchTerm={searchTerm}
           onSearch={(e) => setSearchTerm(e.target.value)}
           heading="CMS Management (About us)"
+          placeholder="about-us"
         />
 
         <div className="p-4">
