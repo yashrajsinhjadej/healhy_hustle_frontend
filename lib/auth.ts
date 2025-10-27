@@ -18,9 +18,8 @@ export interface AuthResponse {
   error?: string
 }
 
-// Token management functions
 export const authUtils = {
-  // Store token and user data in localStorage
+  // Store token and user data
   setAuthData: (token: string, user: User) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_KEY, token)
@@ -28,24 +27,19 @@ export const authUtils = {
     }
   },
 
-  // Get token from localStorage
   getToken: (): string | null => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(TOKEN_KEY)
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(TOKEN_KEY)
     return null
   },
 
-  // Get user data from localStorage
   getUser: (): User | null => {
     if (typeof window !== 'undefined') {
-      const userData = localStorage.getItem(USER_KEY)
-      return userData ? JSON.parse(userData) : null
+      const data = localStorage.getItem(USER_KEY)
+      return data ? JSON.parse(data) : null
     }
     return null
   },
 
-  // Clear authentication data
   clearAuthData: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_KEY)
@@ -53,24 +47,19 @@ export const authUtils = {
     }
   },
 
-  // Check if user is authenticated
   isAuthenticated: (): boolean => {
-    const token = authUtils.getToken()
-    return !!token
+    return !!authUtils.getToken()
   },
 
-  // Get authorization header for API requests
-  getAuthHeader: (): { Authorization: string } | {} => {
+  getAuthHeader: (): Record<string, string> => {
     const token = authUtils.getToken()
     return token ? { Authorization: `Bearer ${token}` } : {}
   },
 
-  // Logout function - calls API and clears local data
   logout: async (): Promise<{ success: boolean; message?: string }> => {
     try {
-      console.log('🚪 [Auth] Starting logout process...')
-      
-      // Call logout API
+      console.log('🚪 [Auth] Logging out...')
+
       const response = await fetch('/api/admin/logout', {
         method: 'POST',
         headers: {
@@ -79,103 +68,92 @@ export const authUtils = {
         },
       })
 
-      console.log('🚪 [Auth] Logout API response status:', response.status)
-      
       if (response.ok) {
         const data = await response.json()
         console.log('✅ [Auth] Logout successful:', data.message)
       } else {
-        console.log('⚠️ [Auth] Logout API failed, but clearing local data anyway')
+        console.warn('⚠️ [Auth] Logout API failed, clearing local data anyway.')
       }
     } catch (error) {
       console.error('❌ [Auth] Logout API error:', error)
-      // Continue with local cleanup even if API fails
     } finally {
-      // Always clear local authentication data
       authUtils.clearAuthData()
-      console.log('🧹 [Auth] Local authentication data cleared')
+      console.log('🧹 [Auth] Local data cleared')
     }
 
     return { success: true, message: 'Logged out successfully' }
-  }
+  },
 }
 
-// API request helper with authentication
+// =========================
+// Authenticated Fetch Helper
+// =========================
+
 export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   const token = authUtils.getToken()
-  
-  console.log('🔍 [AuthenticatedFetch] Making request to:', url)
-  console.log('🔍 [AuthenticatedFetch] Token preview:', token?.substring(0, 20) + '...')
-  console.log('🔍 [AuthenticatedFetch] Token length:', token?.length)
-  console.log('🔍 [AuthenticatedFetch] Token type:', typeof token)
-  
+
+  console.log('🌐 [Fetch] Request:', url)
+  console.log('🌐 [Fetch] Token exists:', !!token)
+
   const headers = {
     'Content-Type': 'application/json',
     ...authUtils.getAuthHeader(),
     ...options.headers,
   }
-  
-  console.log('🔍 [AuthenticatedFetch] Auth header:', authUtils.getAuthHeader())
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  })
+  const response = await fetch(url, { ...options, headers })
 
-  console.log('🔍 [AuthenticatedFetch] Response status:', response.status)
-  console.log('🔍 [AuthenticatedFetch] Response ok:', response.ok)
+  console.log(`🌐 [Fetch] Response status: ${response.status}`)
 
-  // Handle session expiration and authentication errors
+  // 🔐 Handle auth/session errors
   if (response.status === 401 || response.status === 403) {
+    let errorMessage = ''
+
     try {
-      // Clone the response to avoid "body stream already read" error
-      const responseClone = response.clone()
-      const errorData = await responseClone.json()
-      const errorMessage = errorData.message || errorData.error || ''
-      
-      console.log('🔒 [Auth] Authentication error:', response.status)
-      console.log('🔒 [Auth] Error message:', errorMessage)
-      console.log('🔒 [Auth] Full error data:', errorData)
-      
-      // Check for specific session expiration messages
-      if (isSessionExpiredError(errorMessage) || response.status === 403) {
+      const clone = response.clone()
+      const data = await clone.json()
+      errorMessage = data?.message || data?.error || ''
+      console.warn('🚨 [Fetch] Auth error:', errorMessage)
+
+      if (isSessionExpiredError(errorMessage)) {
         handleSessionExpiration(errorMessage)
+        return response // prevent further handling after redirect
       }
-    } catch (parseError) {
-      // If we can't parse the error response, still handle 401/403 as session expired
-      console.log('🔒 [Auth] Parse error, clearing auth data and redirecting')
-      authUtils.clearAuthData()
-      
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
-      }
+    } catch (err) {
+      console.warn('⚠️ [Fetch] Could not parse error response; assuming expired token')
+      handleSessionExpiration()
+      return response
     }
   }
 
   return response
 }
 
-// Helper function to check if an error message indicates session expiration
-export const isSessionExpiredError = (errorMessage: string): boolean => {
-  const message = errorMessage.toLowerCase()
+// =========================
+// Helper Functions
+// =========================
+
+export const isSessionExpiredError = (message: string = ''): boolean => {
+  const msg = message.toLowerCase()
   return (
-    message.includes('session expired') ||
-    message.includes('login from the other device') ||
-    message.includes('login from another device') ||
-    message.includes('session expired due to login from another device') ||
-    message.includes('token expired') ||
-    message.includes('invalid token') ||
-    message.includes('unauthorized')
+    msg.includes('session expired') ||
+    msg.includes('token expired') ||
+    msg.includes('invalid token') ||
+    msg.includes('unauthorized') ||
+    msg.includes('jwt expired') ||
+    msg.includes('authentication failed') ||
+    msg.includes('login from another device')
   )
 }
 
-// Helper function to handle session expiration
-export const handleSessionExpiration = (errorMessage?: string) => {
-  console.log('🔒 [Auth] Session expired, redirecting to login:', errorMessage || 'Unknown error')
+export const handleSessionExpiration = (reason?: string) => {
+  console.warn('🔒 [Auth] Session expired. Redirecting to login...', reason || 'unknown reason')
   authUtils.clearAuthData()
-  
-  // Redirect to login page
+
   if (typeof window !== 'undefined') {
-    window.location.href = '/login'
+    // Redirect only once per session expiration
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login'
+    }
   }
 }

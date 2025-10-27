@@ -75,6 +75,14 @@ export const API_ENDPOINTS = {
 
   ADMIN_WORKOUTS_LIST: '/api/workout/user/listworkout',
 
+  ADMIN_CATEGORY_LIST: '/api/workout/category/list',
+
+  ADMIN_CATEGORY_CREATE: '/api/workout/category/create',
+
+  ADMIN_CATEGORY_UPDATE: (userID: string) => `/api/workout/category/update/${userID}`,
+  ADMIN_CATEGORY_DELETE: (userID: string) => `/api/workout/category/delete/${userID}`,
+  ADMIN_CATEGORY_DETAILS: (userID: string) => `/api/workout/category/list/${userID}`,
+
 
 } as const
 
