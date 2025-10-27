@@ -111,8 +111,7 @@ export default function WorkoutDetailsPage() {
           userProfile={userProfile ?? undefined}
           heading={`Good Morning, ${userProfile?.name || "User"}`}
           searchTerm=""
-          onSearch={() => {}}
-        />
+          onSearch={() => { } } placeholder={""}        />
 
         <div className="flex w-full">
           <div className="flex-1 p-6 pb-0">

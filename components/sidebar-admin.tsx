@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 
 const sidebarItems = [
   { label: "User management", icon: User, href: "/dashboard" },
-  { label: "Training session management", icon: Dumbbell, href: "/workouts" },
+  { label: "Training session management", icon: Dumbbell, href: "/Category" },
 ]
 
 const cmsItems = [

@@ -127,7 +127,7 @@ export default function WorkoutsList() {
     <div className="w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {workouts.length > 0 ? (
-          workouts.map((w) => (
+          workouts.map((w) => ( 
             <div
               key={w._id}
               className="bg-white border border-[#E6E6E6] rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow"

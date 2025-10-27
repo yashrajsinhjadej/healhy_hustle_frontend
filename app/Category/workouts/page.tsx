@@ -8,28 +8,28 @@ import { authenticatedFetch, authUtils, User as UserType } from '@/lib/auth'
 
 
 export default function WorkoutsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [userProfile, setUserProfile] = useState<UserType | null>(null)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [userProfile, setUserProfile] = useState<UserType | null>(null)
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const storedUser = authUtils.getUser()
-        if (storedUser) {
-          setUserProfile(storedUser)
-          return
+    useEffect(() => {
+      const fetchUserProfile = async () => {
+        try {
+          const storedUser = authUtils.getUser()
+          if (storedUser) {
+            setUserProfile(storedUser)
+            return
+          }
+          const response = await authenticatedFetch("/api/users/profile")
+          if (response.ok) {
+            const data = await response.json()
+            setUserProfile(data.user)
+          }
+        } catch (error) {
+          // ignore
         }
-        const response = await authenticatedFetch("/api/user/profile")
-        if (response.ok) {
-          const data = await response.json()
-          setUserProfile(data.user)
-        }
-      } catch (error) {
-        // ignore
       }
-    }
-    fetchUserProfile()
-  }, [])
+      fetchUserProfile()
+    }, [])
 
   return (
     <div className="flex min-h-screen bg-[#f4f5f6]">
