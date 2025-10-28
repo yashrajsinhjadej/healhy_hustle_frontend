@@ -75,13 +75,17 @@ export const API_ENDPOINTS = {
 
   ADMIN_WORKOUTS_LIST: '/api/workout/user/listworkout',
 
-  ADMIN_CATEGORY_LIST: '/api/workout/category/list',
+  ADMIN_CATEGORY_LIST: '/api/workout/admin/category/list',
 
-  ADMIN_CATEGORY_CREATE: '/api/workout/category/create',
+  ADMIN_CATEGORY_CREATE: '/api/workout/admin/category/create',
 
-  ADMIN_CATEGORY_UPDATE: (userID: string) => `/api/workout/category/update/${userID}`,
-  ADMIN_CATEGORY_DELETE: (userID: string) => `/api/workout/category/delete/${userID}`,
-  ADMIN_CATEGORY_DETAILS: (userID: string) => `/api/workout/category/list/${userID}`,
+  ADMIN_WORKOUT_BY_CATEGORY: '/api/workout/user/getcategory',
+
+  GET_WORKOUT_BY_ID: '/api/workout/user/getworkoutbyid',
+
+  ADMIN_CATEGORY_UPDATE: (userID: string) => `/api/workout/admin/category/update/${userID}`,
+  ADMIN_CATEGORY_DELETE: (userID: string) => `/api/workout/admin/category/delete/${userID}`,
+  ADMIN_CATEGORY_DETAILS: (userID: string) => `/api/workout/admin/category/list/${userID}`,
 
 
 } as const

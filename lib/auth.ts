@@ -72,7 +72,7 @@ export const authUtils = {
         const data = await response.json()
         console.log('✅ [Auth] Logout successful:', data.message)
       } else {
-        console.warn('⚠️ [Auth] Logout API failed, clearing local data anyway.')
+        console.warn('⚠ [Auth] Logout API failed, clearing local data anyway.')
       }
     } catch (error) {
       console.error('❌ [Auth] Logout API error:', error)
@@ -86,7 +86,22 @@ export const authUtils = {
 }
 
 // =========================
-// Authenticated Fetch Helper
+// Optional: Cache-busting helper
+// =========================
+export const withCacheBust = (url: string) => {
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}_t=${Date.now()}`
+}
+
+// =========================
+/**
+ * Authenticated Fetch Helper (enhanced)
+ * - Defaults to cache: 'no-store' to avoid stale responses
+ * - Forwards all RequestInit options
+ * - Merges auth header
+ * - Ensures body is a JSON string if provided
+ * - Preserves your existing 401/403 session handling
+ */
 // =========================
 
 export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
@@ -95,13 +110,34 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   console.log('🌐 [Fetch] Request:', url)
   console.log('🌐 [Fetch] Token exists:', !!token)
 
-  const headers = {
+  // Merge headers (auth first, then caller-provided headers)
+  const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...authUtils.getAuthHeader(),
-    ...options.headers,
+    ...(options.headers || {}),
   }
 
-  const response = await fetch(url, { ...options, headers })
+  // Default to no-store unless explicitly overridden per request
+  const cache = options.cache ?? 'no-store'
+
+  // Ensure body is a string if provided
+  let body = options.body
+  if (body && typeof body !== 'string') {
+    try {
+      body = JSON.stringify(body)
+    } catch (e) {
+      console.warn('⚠️ [Fetch] Failed to stringify body, sending raw:', e)
+    }
+  }
+
+  const finalOptions: RequestInit = {
+    ...options,
+    headers,
+    cache,
+    body,
+  }
+
+  const response = await fetch(url, finalOptions)
 
   console.log(`🌐 [Fetch] Response status: ${response.status}`)
 

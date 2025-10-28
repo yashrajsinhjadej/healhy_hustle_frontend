@@ -1,11 +1,12 @@
+// app/Category/[id]/EditCategory.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { authenticatedFetch } from '@/lib/auth'
 
 export function EditCategory() {
-  const { id } = useParams()
+  const { id } = useParams() as { id?: string }
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -17,41 +18,44 @@ export function EditCategory() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
-  // 🧠 Fetch category details
-  useEffect(() => {
-    const fetchCategory = async () => {
-      try {
-        const res = await authenticatedFetch(`/api/Category/details/${id}`)
-        const result = await res.json()
-        console.log('📦 Category Details:', result)
+  const fetchCategory = useCallback(async () => {
+    if (!id) return
+    setLoading(true)
+    setMessage('')
+    try {
+      const res = await authenticatedFetch(`/api/Category/details/${id}`, {
+        cache: 'no-store',
+      })
+      const result = await res.json()
+      console.log('📦 Category Details:', result)
 
-        if (res.ok && result?.data) {
-          setFormData({
-            name: result.data.name || '',
-            designId: result.data.designId?.toString() || '',
-            categorySequence: result.data.categorySequence?.toString() || '',
-          })
-        } else {
-          throw new Error(result.error || result.message || 'Failed to load category data')
-        }
-      } catch (err) {
-        console.error('❌ Failed to load category data:', err)
-        setMessage('❌ Failed to load category data')
-      } finally {
-        setLoading(false)
+      if (res.ok && result?.data) {
+        const d = result.data
+        setFormData({
+          name: d.name || '',
+          designId: d.designId?.toString() || '',
+          categorySequence: d.categorySequence?.toString() || '',
+        })
+      } else {
+        throw new Error(result.error || result.message || 'Failed to load category data')
       }
+    } catch (err) {
+      console.error('❌ Failed to load category data:', err)
+      setMessage('❌ Failed to load category data')
+    } finally {
+      setLoading(false)
     }
-
-    if (id) fetchCategory()
   }, [id])
 
-  // 🧩 Handle input changes
+  useEffect(() => {
+    fetchCategory()
+  }, [fetchCategory])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // 🚀 Handle save (update API will be added next)
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setMessage('')
@@ -65,6 +69,7 @@ export function EditCategory() {
           designId: Number(formData.designId),
           categorySequence: Number(formData.categorySequence),
         }),
+        cache: 'no-store', // ensure this mutation isn’t cached
       })
 
       const result = await response.json()
@@ -72,7 +77,11 @@ export function EditCategory() {
 
       if (response.ok) {
         setMessage('✅ Category updated successfully!')
-        setTimeout(() => router.push('/Category'), 1000)
+        // Refetch fresh details so reopening edit shows updated values
+        await fetchCategory()
+
+        // If you want to return to list, you can still push after a short delay
+        setTimeout(() => router.push('/Category'), 800)
       } else {
         setMessage(`❌ ${result.error || 'Failed to update category'}`)
       }
@@ -100,7 +109,6 @@ export function EditCategory() {
         </h2>
 
         <form onSubmit={handleSave} className="space-y-5">
-          {/* Category Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
               Category Name
@@ -117,7 +125,6 @@ export function EditCategory() {
             />
           </div>
 
-          {/* Design ID */}
           <div>
             <label htmlFor="designId" className="block text-sm font-medium text-gray-700 mb-1">
               Design ID
@@ -134,7 +141,6 @@ export function EditCategory() {
             />
           </div>
 
-          {/* Category Sequence */}
           <div>
             <label htmlFor="categorySequence" className="block text-sm font-medium text-gray-700 mb-1">
               Category Sequence
@@ -151,7 +157,6 @@ export function EditCategory() {
             />
           </div>
 
-          {/* Save Button */}
           <button
             type="submit"
             disabled={saving}
@@ -162,7 +167,6 @@ export function EditCategory() {
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
 
-          {/* Message */}
           {message && (
             <p
               className={`text-center text-sm mt-2 ${

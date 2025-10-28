@@ -7,14 +7,14 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, designId, categorySequence } = body
+    const { name, designId,  } = body
     console.log('Received category creation request with body:', body)
 
-    if (!name || !designId || !categorySequence) {
+    if (!name || !designId) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Missing required fields: name, designId, categorySequence',
+          message: 'Missing required fields: name, designId',
         },
         { status: 400 }
       )
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         ...(authHeader ? { Authorization: authHeader } : {}),
       },
-      body: JSON.stringify({ name, designId, categorySequence }),
+      body: JSON.stringify({ name, designId }),
     })
 
     const data = await response.json()
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      success: true,
+      success: true,    
       message: data.message || 'Category created successfully',
       data: data.data || null,
     })

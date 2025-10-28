@@ -1,3 +1,4 @@
+// app/(admin)/Category/page.tsx or wherever this component lives
 'use client'
 import { useState, useEffect } from 'react'
 import { SidebarAdmin } from '@/components/sidebar-admin'
@@ -13,7 +14,12 @@ export function Category() {
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
-  // 🧭 Fetch user info (same logic)
+  const handleCategoryClick = (categoryId: string) => {
+    console.log('Category clicked:', categoryId)
+    router.push(`/Category/${categoryId}`)
+  }
+
+  // Fetch user info
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -30,18 +36,17 @@ export function Category() {
         }
       } catch {
         // ignore
-
       }
     }
     fetchUserProfile()
   }, [])
 
-  // 🧩 Fetch categories from API (instead of dummy data)
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       setLoading(true)
       try {
-        const response = await authenticatedFetch('/api/Category') // ✅ Calls your Next.js route
+        const response = await authenticatedFetch('/api/Category')
         console.log('Category API response:', response)
         if (response.ok) {
           const data = await response.json()
@@ -59,7 +64,10 @@ export function Category() {
     fetchCategories()
   }, [])
 
- const handleDeleteCategory = async (categoryId: string) => {
+  const handleDeleteCategory = async (e: React.MouseEvent, categoryId: string) => {
+    // Prevent row onClick from firing
+    e.stopPropagation()
+
     if (!confirm('Are you sure you want to delete this category?')) {
       return
     }
@@ -79,11 +87,13 @@ export function Category() {
     }
   }
 
-const handleCreateCategory = () => {
-  router.push('/Category/create')
+  const handleCreateCategory = () => {
+    router.push('/Category/create')
   }
 
-  const handleEditCategory = (categoryId: string) => {
+  const handleEditCategory = (e: React.MouseEvent, categoryId: string) => {
+    // Prevent row onClick from firing
+    e.stopPropagation()
     router.push(`/Category/edit/${categoryId}`)
   }
 
@@ -106,7 +116,10 @@ const handleCreateCategory = () => {
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Training category</h2>
-              <button className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800" onClick={()=>handleCreateCategory()}>
+              <button
+                className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800"
+                onClick={handleCreateCategory}
+              >
                 Add Category
               </button>
             </div>
@@ -128,18 +141,25 @@ const handleCreateCategory = () => {
                   </thead>
                   <tbody>
                     {categories.map((cat) => (
-                      <tr key={cat._id} className="border-b hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={cat._id}
+                        className="border-b hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handleCategoryClick(cat._id)}
+                      >
                         <td className="py-3 px-4">{cat.designId}</td>
                         <td className="py-3 px-4">{cat.name}</td>
-                        
-                        <td className="py-3 px-4">
-                          {cat.totalWorkouts || 0}
-                        </td>
+                        <td className="py-3 px-4">{cat.totalWorkouts || 0}</td>
                         <td className="py-3 px-4 text-right">
-                          <button className="text-gray-500 hover:text-black mr-3" onClick={()=>handleEditCategory(cat._id)}>
+                          <button
+                            className="text-gray-500 hover:text-black mr-3"
+                            onClick={(e) => handleEditCategory(e, cat._id)}
+                          >
                             <Pencil size={16} />
                           </button>
-                          <button className="text-gray-500 hover:text-red-600" onClick={() => handleDeleteCategory(cat._id)}>
+                          <button
+                            className="text-gray-500 hover:text-red-600"
+                            onClick={(e) => handleDeleteCategory(e, cat._id)}
+                          >
                             <Trash2 size={16} />
                           </button>
                         </td>

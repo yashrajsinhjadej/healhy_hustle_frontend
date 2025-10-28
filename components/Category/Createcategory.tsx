@@ -1,3 +1,5 @@
+// CreateCategory.tsx
+
 'use client'
 
 import { useState } from 'react'
@@ -5,10 +7,10 @@ import { authenticatedFetch } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 
 export function CreateCategory() {
+  // Removed categorySequence from formData
   const [formData, setFormData] = useState({
     name: '',
     designId: '',
-    categorySequence: '',
   })
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -31,7 +33,7 @@ export function CreateCategory() {
         body: JSON.stringify({
           name: formData.name,
           designId: Number(formData.designId),
-          categorySequence: Number(formData.categorySequence),
+          
         }),
       })
 
@@ -40,9 +42,9 @@ export function CreateCategory() {
 
       if (response.ok) {
         setMessage('✅ Category created successfully!')
-        setFormData({ name: '', designId: '', categorySequence: '' })
-         setTimeout(() => {
-            router.push('/Category') // ✅ redirect to /Category
+        setFormData({ name: '', designId: '' })
+        setTimeout(() => {
+          router.push('/Category') // ✅ redirect to /Category
         }, 500)
       } else {
         setMessage(`❌ ${result.error || 'Failed to create category.'}`)
@@ -92,26 +94,6 @@ export function CreateCategory() {
               value={formData.designId}
               onChange={handleChange}
               placeholder="Enter design ID"
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-
-          {/* Category Sequence */}
-          <div>
-            <label
-              htmlFor="categorySequence"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Category Sequence
-            </label>
-            <input
-              type="number"
-              id="categorySequence"
-              name="categorySequence"
-              value={formData.categorySequence}
-              onChange={handleChange}
-              placeholder="Enter category sequence"
               required
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
             />

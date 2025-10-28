@@ -1,46 +1,61 @@
+// app/api/Category/details/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getBackendApiUrl, API_ENDPOINTS } from '@/lib/backend-config'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic' // disable static caching
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params
 
   if (!id) {
-    return NextResponse.json({ error: 'Category ID is required' }, { status: 400 })
+    return NextResponse.json({ success: false, error: 'Category ID is required' }, { status: 400 })
   }
 
   try {
-    // 🔐 Get Authorization header
+    // Forward auth
     const authHeader = request.headers.get('authorization')
 
-    // 🧩 Construct backend URL
+    // Build backend URL with cache-bust to avoid intermediary caches
     const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_CATEGORY_DETAILS(id))
+    const urlWithBust = `${backendUrl}${backendUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`
+    console.log('🔗 [Category Details] Forwarding to:', urlWithBust)
 
-    console.log('🔗 [Category Details] Forwarding to:', backendUrl)
-
-    // 🚀 Forward request to backend
-    const res = await fetch(backendUrl, {
+    // Forward request with explicit no-store
+    const res = await fetch(urlWithBust, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader ? { Authorization: authHeader } : {}),
       },
+      cache: 'no-store',
     })
 
-    // 🧠 Handle response (both JSON / text)
     const contentType = res.headers.get('content-type') || ''
+
+    // Normalize response to JSON
     if (contentType.includes('application/json')) {
       const data = await res.json()
-      return NextResponse.json(data, { status: res.status })
+
+      // Propagate no-store headers to the client
+      const nextRes = NextResponse.json(data, { status: res.status })
+      nextRes.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      nextRes.headers.set('Pragma', 'no-cache')
+      nextRes.headers.set('Expires', '0')
+      nextRes.headers.set('Surrogate-Control', 'no-store')
+      return nextRes
     }
 
     const text = await res.text()
-    return new NextResponse(text, { status: res.status })
+    const nextRes = new NextResponse(text, { status: res.status })
+    nextRes.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    nextRes.headers.set('Pragma', 'no-cache')
+    nextRes.headers.set('Expires', '0')
+    nextRes.headers.set('Surrogate-Control', 'no-store')
+    return nextRes
   } catch (err) {
     console.error('❌ [Category Details] Error:', err)
     return NextResponse.json(
-      { error: 'Failed to fetch category details' },
+      { success: false, error: 'Failed to fetch category details' },
       { status: 500 }
     )
   }

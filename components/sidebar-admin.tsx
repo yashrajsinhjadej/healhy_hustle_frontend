@@ -81,8 +81,8 @@ export function SidebarAdmin() {
         <div className="space-y-1">
           {sidebarItems.map((item) => {
             // Make 'Training session management' active for all /workouts subroutes
-            const isActive = item.href === '/workouts'
-              ? pathname.startsWith('/workouts')
+            const isActive = item.href === '/Category'
+              ? pathname.startsWith('/Category')
               : pathname === item.href;
             return (
               <div
