@@ -35,7 +35,6 @@ export default function WorkoutsPage() {
   }, [])
 
   const handleAddWorkout = () => {
-    // Use absolute path; casing must match your folder structure
     router.push('/Category/workouts/create')
   }
 

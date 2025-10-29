@@ -156,7 +156,7 @@ export default function WorkoutsList() {
                     className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-colors"
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/workouts/edit?id=${encodeURIComponent(workout._id)}`)
+                      router.push(`/Category/workouts/edit?id=${encodeURIComponent(workout._id)}&&categoryId=${encodeURIComponent(categoryId)}`)
                     }}
                   >
                     Edit

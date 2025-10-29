@@ -5,7 +5,7 @@ export default function CreateWorkoutPage() {
     <div className="min-h-screen bg-[#f4f5f6] p-8">
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
         <h1 className="text-2xl font-semibold mb-4">Create workout session</h1>
-        <WorkoutForm redirectTo="/workouts" />
+        <WorkoutForm redirectTo="/Category" />
       </div>
     </div>
   )

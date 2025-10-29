@@ -17,11 +17,12 @@ interface Category {
 export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () => void, redirectTo?: string }) {
   const [form, setForm] = useState({
     name: '',
-    level: 'beginner',
+    level: 'beginner', // UI value; will be converted to Capitalized on submit (e.g., Beginner, Intermediate, Advanced)
     duration: '',
     introduction: '',
+    // description removed
     categoryIds: [] as string[],
-    caloriesBurnedEstimate: '' // allow optional numeric input if needed
+    caloriesBurned: '' // optional numeric input
   })
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -53,7 +54,6 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
         setLoadingCategories(true)
         setErrorMsg(null)
 
-        // Using your working endpoint (from your last message)
         const res = await authenticatedFetch('/api/Category', { method: 'GET' })
 
         if (res.status === 401) {
@@ -72,7 +72,7 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
         const cats: Category[] = Array.isArray((data as any)?.data) ? (data as any).data : []
         if (mounted) {
           setCategories(cats)
-          // If none selected yet, preselect first category for convenience (optional)
+          // Preselect first category for convenience (optional)
           if (cats.length > 0 && form.categoryIds.length === 0) {
             setForm(prev => ({ ...prev, categoryIds: [cats[0]._id] }))
           }
@@ -88,6 +88,8 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // load once
 
+  const capitalizeFirstLetter = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s
+
   const handleSave = async () => {
     setErrorMsg(null)
 
@@ -96,11 +98,12 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
     if (!form.duration || isNaN(Number(form.duration))) return setErrorMsg('Duration must be a number')
     if (!form.level) return setErrorMsg('Level is required')
     if (!form.introduction.trim()) return setErrorMsg('Introduction is required')
+    // description removed from validation
     if (!form.categoryIds.length) return setErrorMsg('Select at least one category')
     if (!banner) return setErrorMsg('Banner image is required')
     if (!thumbnail) return setErrorMsg('Thumbnail image is required')
-    if (form.caloriesBurnedEstimate && isNaN(Number(form.caloriesBurnedEstimate))) {
-      return setErrorMsg('Calories burned estimate must be a number')
+    if (form.caloriesBurned && isNaN(Number(form.caloriesBurned))) {
+      return setErrorMsg('Calories burned must be a number')
     }
 
     setIsSaving(true)
@@ -108,17 +111,21 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
       const fd = new FormData()
       // Required fields
       fd.append('name', form.name)
-      fd.append('level', form.level)
+
+      // Map UI level to capitalized string ('beginner' -> 'Beginner', etc.)
+      const levelCapitalized = capitalizeFirstLetter(form.level)
+      fd.append('level', levelCapitalized)
+
       fd.append('duration', String(Number(form.duration)))
       fd.append('introduction', form.introduction)
+      // description removed from payload
 
-      // Optional caloriesBurnedEstimate if provided
-      if (form.caloriesBurnedEstimate) {
-        fd.append('caloriesBurnedEstimate', String(Number(form.caloriesBurnedEstimate)))
+      // Optional caloriesBurned if provided
+      if (form.caloriesBurned) {
+        fd.append('caloriesBurned', String(Number(form.caloriesBurned)))
       }
 
-      // Append multiple categoryIds as array indices, as requested:
-      // categoryIds[0]: 6900..., categoryIds[1]: 6900...
+      // Append multiple categoryIds as array indices
       form.categoryIds.forEach((id, index) => {
         fd.append(`categoryIds[${index}]`, id)
       })
@@ -162,7 +169,7 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
               className="flex-1 border rounded px-3 py-2"
               onChange={(e) => handleAddCategoryId(e.target.value)}
               disabled={loadingCategories || categories.length === 0}
-              value="" // always reset to placeholder after add
+              value=""
             >
               <option value="" disabled>
                 {loadingCategories ? 'Loading categories...' : (categories.length === 0 ? 'No categories available' : 'Add a category…')}
@@ -181,7 +188,6 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
             </Button>
           </div>
 
-          {/* Selected categories chips */}
           {form.categoryIds.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {form.categoryIds.map(id => {
@@ -220,6 +226,7 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
             <option value="intermediate">intermediate</option>
             <option value="advanced">advanced</option>
           </select>
+          {/* Note: will be sent as Capitalized to backend (Beginner/Intermediate/Advanced) */}
         </div>
 
         <div>
@@ -229,14 +236,20 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
 
         <div>
           <Label>Introduction</Label>
-          <Input value={form.introduction} onChange={(e) => handleChange('introduction', e.target.value)} />
+          <Input
+            value={form.introduction}
+            onChange={(e) => handleChange('introduction', e.target.value)}
+            placeholder="Short intro for this workout"
+          />
         </div>
+
+        {/* Description input removed */}
 
         <div>
           <Label>Calories Burned (estimate)</Label>
           <Input
-            value={form.caloriesBurnedEstimate}
-            onChange={(e) => handleChange('caloriesBurnedEstimate', e.target.value)}
+            value={form.caloriesBurned}
+            onChange={(e) => handleChange('caloriesBurned', e.target.value)}
             placeholder="e.g., 350"
           />
         </div>

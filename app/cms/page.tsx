@@ -1,6 +1,17 @@
-import { redirect } from 'next/navigation'
+// app/cms/page.tsx
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function CmsPage() {
-  // Redirect to About Us page by default
-  redirect('/cms/about')
+  const router = useRouter()
+
+  useEffect(() => {
+    // replace avoids adding /cms to history, preventing a "back" jump to an empty page
+    router.replace("/cms/about")
+  }, [router])
+
+  // Optional: small fallback UI if someone sees this momentarily
+  return null
 }
