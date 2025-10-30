@@ -1,11 +1,28 @@
-// filename: app/Category/workouts/page.tsx (or wherever this component lives)
 "use client"
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { toast } from '@/hooks/use-toast'
+import { Pencil, Trash, Play } from 'lucide-react'
+
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
 import { authenticatedFetch, authUtils } from '@/lib/auth'
-import { Loader2 } from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
 
 interface Workout {
   _id: string
@@ -14,14 +31,127 @@ interface Workout {
   duration: number
   thumbnailUrl?: string
   exerciseCount?: number
-  sequence?: number
-  categoryWorkoutId?: string
+  // Add any extra fields as needed
 }
 
-interface WorkoutsResponse {
-  message: string
-  data: Workout[]
-  error?: string
+function SortableWorkoutRow({
+  workout,
+  onEdit,
+  onDelete,
+  onClick,
+}: {
+  workout: Workout
+  onEdit: (e: React.MouseEvent, id: string) => void
+  onDelete: (e: React.MouseEvent, id: string) => void
+  onClick: (id: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: workout._id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    backgroundColor: isDragging ? '#f3f4f6' : 'transparent',
+  }
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="border-b hover:bg-gray-50 transition-colors cursor-pointer"
+    >
+      {/* Thumbnail column from backend */}
+      <td
+        className="py-3 px-4"
+        onClick={e => {
+          e.stopPropagation()
+          onClick(workout._id)
+        }}
+      >
+        <div className="relative w-20 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+          <img
+            src={workout.thumbnailUrl || "/placeholder-user.jpg"}
+            alt={workout.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+            <Play className="w-6 h-6 text-white" fill="white" />
+          </div>
+        </div>
+      </td>
+      
+      {/* Title */}
+      <td
+        className="py-3 px-4"
+        onClick={e => {
+          e.stopPropagation()
+          onClick(workout._id)
+        }}
+      >
+        <div className="font-medium text-gray-900">{workout.name}</div>
+      </td>
+
+      {/* Level */}
+      <td
+        className="py-3 px-4"
+        onClick={e => {
+          e.stopPropagation()
+          onClick(workout._id)
+        }}
+      >
+        {workout.level}
+      </td>
+
+      {/* Duration */}
+      <td
+        className="py-3 px-4 text-gray-700"
+        onClick={e => {
+          e.stopPropagation()
+          onClick(workout._id)
+        }}
+      >
+        {workout.duration} min
+      </td>
+
+      {/* Exercises */}
+      <td
+        className="py-3 px-4 text-gray-700"
+        onClick={e => {
+          e.stopPropagation()
+          onClick(workout._id)
+        }}
+      >
+        {workout.exerciseCount ?? 0}
+      </td>
+      
+      {/* Actions */}
+      <td className="py-3 px-4 text-right" onClick={e => e.stopPropagation()}>
+        <button
+          className="inline-flex items-center gap-1 text-gray-600 hover:text-black mr-3 px-3 py-1.5 rounded hover:bg-gray-100 transition-colors"
+          onClick={e => onEdit(e, workout._id)}
+        >
+          <Pencil size={16} />
+          <span className="text-sm">Edit</span>
+        </button>
+        <button
+          className="inline-flex items-center gap-1 text-gray-600 hover:text-red-600 px-3 py-1.5 rounded hover:bg-red-50 transition-colors"
+          onClick={e => onDelete(e, workout._id)}
+        >
+          <Trash size={16} />
+          <span className="text-sm">Delete</span>
+        </button>
+      </td>
+    </tr>
+  )
 }
 
 export default function WorkoutsList() {
@@ -32,168 +162,149 @@ export default function WorkoutsList() {
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [updating, setUpdating] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  )
 
   useEffect(() => {
     let mounted = true
-
-    async function fetchWorkouts() {
+    const fetchWorkouts = async () => {
       try {
         setLoading(true)
         setError('')
-
         const res = await authenticatedFetch(`/api/workout/get-by-category`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ categoryId }),
         })
-
         if (res.status === 401) {
           authUtils.clearAuthData()
           return
         }
-
-        const response: WorkoutsResponse = await res.json()
-
+        const response = await res.json()
         if (!res.ok) {
           setError(response?.error || 'Failed to fetch workouts')
           return
         }
-
         if (mounted) {
-          setWorkouts(response?.data ?? [])
+          const data = response?.data ?? []
+          const sorted = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+          setWorkouts(sorted)
         }
-      } catch (err) {
-        if (mounted) {
-          setError('Something went wrong while fetching workouts.')
-        }
+      } catch {
+        if (mounted) setError('Something went wrong while fetching workouts.')
       } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+        if (mounted) setLoading(false)
       }
     }
-
     fetchWorkouts()
-    return () => {
-      mounted = false
-    }
+    return () => { mounted = false }
   }, [categoryId])
 
-  function handleWorkoutClick(workoutId: string) {
-    router.push(`/Category/workouts/${workoutId}`)
+  const handleWorkoutClick = (id: string) => {
+    if (!isDragging) {
+      router.push(`/Category/workouts/${id}`)
+    }
   }
 
-  async function handleDelete(workoutId: string, e: React.MouseEvent) {
+  const handleEdit = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
+    router.push(`/Category/workouts/edit?id=${encodeURIComponent(id)}&&categoryId=${encodeURIComponent(categoryId)}`)
+  }
 
-    const ok = confirm('Delete this workout? This action cannot be undone.')
-    if (!ok) return
-
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (!confirm('Delete this workout? This action cannot be undone.')) return
     try {
-      setDeletingId(workoutId)
-
       const res = await authenticatedFetch(`/api/workout/admin/delete`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Send workoutId in JSON body; change key if your API expects `id`
-        body: JSON.stringify({ workoutId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workoutId: id }),
       })
-
-      if (res.status === 401) {
-        authUtils.clearAuthData()
-        return
-      }
-
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({ message: 'Failed to delete' }))
         alert(errJson?.message || 'Failed to delete workout')
         return
       }
-
-      setWorkouts((prev) => prev.filter(item => item._id !== workoutId))
+      setWorkouts(prev => prev.filter(item => item._id !== id))
       toast({ title: 'Workout was deleted' })
-    } catch (err) {
-      console.error('Delete failed', err)
+    } catch {
       alert('Failed to delete workout')
-    } finally {
-      setDeletingId(null)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-600" />
-      </div>
-    )
+  const handleDragStart = (event: DragStartEvent) => setIsDragging(true)
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setIsDragging(false)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = workouts.findIndex(wk => wk._id === active.id)
+    const newIndex = workouts.findIndex(wk => wk._id === over.id)
+    const reordered = arrayMove(workouts, oldIndex, newIndex)
+    setWorkouts(reordered)
+    setUpdating(true)
+    try {
+      // Optionally send new order to backend here
+      // await authenticatedFetch(...)
+    } catch {
+      setWorkouts(workouts)
+    } finally {
+      setUpdating(false)
+    }
   }
 
-  if (error) {
-    return <p className="text-center mt-8 text-red-500">{error}</p>
-  }
+  if (loading) return <div className="py-10 text-center text-gray-500">Loading workouts...</div>
+  if (error) return <p className="text-center mt-8 text-red-500">{error}</p>
 
   return (
-    <div className="w-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {workouts.length > 0 ? (
-          workouts.map((workout) => (
-            <div
-              key={workout._id}
-              className="bg-white border border-[#E6E6E6] rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleWorkoutClick(workout._id)}
-            >
-              <img
-                src={workout.thumbnailUrl || '/placeholder-user.jpg'}
-                alt={workout.name}
-                className="w-full h-48 object-cover object-center"
-              />
-              <div className="flex-1 flex flex-col p-4">
-                <h3 className="text-lg font-semibold mb-1">{workout.name}</h3>
-                <p className="text-sm text-gray-600 mb-1">Level: {workout.level}</p>
-                <p className="text-sm text-gray-600 mb-1">Duration: {workout.duration} min</p>
-                <p className="text-sm text-gray-600 mb-4">
-                  Exercises: {workout.exerciseCount || 0}
-                </p>
-                <div className="mt-auto flex gap-2">
-                  <button
-                    className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(
-                        `/Category/workouts/edit?id=${encodeURIComponent(workout._id)}&&categoryId=${encodeURIComponent(categoryId)}`
-                      )
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded bg-gray-800 hover:bg-gray-900 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={(e) => handleDelete(workout._id, e)}
-                    disabled={deletingId === workout._id}
-                  >
-                    {deletingId === workout._id ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="animate-spin w-4 h-4" />
-                        Deleting...
-                      </span>
-                    ) : (
-                      'Delete'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-gray-500">No workouts found in this category.</p>
-          </div>
-        )}
+    <div className="overflow-x-auto">
+      {updating && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          🔄 Updating workout order...
+        </div>
+      )}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b bg-gray-50 text-gray-600 text-sm">
+              <th className="py-3 px-4">Thumbnail</th>
+              <th className="py-3 px-4">Title</th>
+              <th className="py-3 px-4">Level</th>
+              <th className="py-3 px-4">Duration</th>
+              <th className="py-3 px-4">Exercises</th>
+              <th className="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <SortableContext items={workouts.map(wk => wk._id)} strategy={verticalListSortingStrategy}>
+            <tbody>
+              {workouts.map(wk => (
+                <SortableWorkoutRow
+                  key={wk._id}
+                  workout={wk}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onClick={handleWorkoutClick}
+                />
+              ))}
+            </tbody>
+          </SortableContext>
+        </table>
+      </DndContext>
+      <div className="mt-4 text-sm text-gray-500">
+        Showing {workouts.length} workout{workouts.length !== 1 ? 's' : ''}
       </div>
     </div>
   )

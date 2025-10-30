@@ -7,7 +7,6 @@ import { authenticatedFetch, authUtils } from '@/lib/auth'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useRouter } from "next/navigation"
 
-// 🎯 DND-KIT IMPORTS
 import {
   DndContext,
   closestCenter,
@@ -25,7 +24,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-// 🎯 SORTABLE ROW COMPONENT
 function SortableRow({ 
   category, 
   onEdit, 
@@ -64,7 +62,6 @@ function SortableRow({
       <td 
         className="py-3 px-4"
         onClick={(e) => {
-          // Prevent drag when clicking on the cell content
           e.stopPropagation()
           onClick(category._id)
         }}
@@ -112,7 +109,6 @@ function SortableRow({
   )
 }
 
-// 🎯 MAIN COMPONENT
 export function Category() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
@@ -122,26 +118,21 @@ export function Category() {
   const [isDragging, setIsDragging] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  // 🎯 CONFIGURE SENSORS WITH DELAY
-  // This is the magic! 250ms delay before drag starts
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 250,      // Wait 250ms before starting drag
-        tolerance: 5,    // Allow 5px movement during delay
+        delay: 250,
+        tolerance: 5,
       },
     })
   )
 
   const handleCategoryClick = (categoryId: string) => {
-    // Only navigate if not dragging
     if (!isDragging) {
-      console.log('Category clicked:', categoryId)
       router.push(`/Category/${categoryId}`)
     }
   }
 
-  // Fetch user info
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -163,24 +154,28 @@ export function Category() {
     fetchUserProfile()
   }, [])
 
-  // Fetch categories
   const fetchCategories = async () => {
     setLoading(true)
     try {
       const response = await authenticatedFetch('/api/Category')
-      console.log('Category API response:', response)
       if (response.ok) {
         const data = await response.json()
-        // Sort by categorySequence to ensure correct order
         const sortedCategories = (data.data || []).sort(
           (a: any, b: any) => a.categorySequence - b.categorySequence
         )
         setCategories(sortedCategories)
       } else {
-        console.error('Failed to fetch categories:', response.status)
+        let msg = `Failed to fetch categories (status ${response.status})`
+        try {
+          const data = await response.json()
+          msg = data?.error || data?.message || msg
+        } catch {}
+        console.error(msg)
+        alert(msg)
       }
     } catch (err) {
       console.error('Error fetching categories:', err)
+      alert('Network error while fetching categories.')
     } finally {
       setLoading(false)
     }
@@ -190,18 +185,13 @@ export function Category() {
     fetchCategories()
   }, [])
 
-  // 🎯 DRAG START HANDLER
   const handleDragStart = (event: DragStartEvent) => {
     setIsDragging(true)
-    console.log('Drag started:', event.active.id)
   }
 
-  // 🎯 DRAG END HANDLER - THE MAIN LOGIC
   const handleDragEnd = async (event: DragEndEvent) => {
     setIsDragging(false)
     const { active, over } = event
-
-    // If dropped outside or in same position, do nothing
     if (!over || active.id === over.id) {
       return
     }
@@ -209,47 +199,34 @@ export function Category() {
     const oldIndex = categories.findIndex((cat) => cat._id === active.id)
     const newIndex = categories.findIndex((cat) => cat._id === over.id)
 
-    console.log(`Moving category from index ${oldIndex} to ${newIndex}`)
-
-    // 1️⃣ OPTIMISTIC UPDATE: Reorder local state immediately
     const reorderedCategories = arrayMove(categories, oldIndex, newIndex)
     setCategories(reorderedCategories)
 
-    // 2️⃣ CALCULATE NEW SEQUENCE (array index starts at 0, sequence starts at 1)
     const newSequence = newIndex + 1
     const categoryId = active.id as string
 
-    console.log(`Updating category ${categoryId} to sequence ${newSequence}`)
-
-    // 3️⃣ CALL API TO UPDATE SEQUENCE
     setUpdating(true)
     try {
       const response = await authenticatedFetch(`/api/Category/update/${categoryId}`, {
         method: 'POST',
-        body: JSON.stringify({
-          categorySequence: newSequence,
-        }),
+        body: JSON.stringify({ categorySequence: newSequence }),
       })
 
       if (response.ok) {
-        console.log('✅ Category sequence updated successfully')
-        
-        // 4️⃣ REFETCH TO ENSURE SYNC WITH BACKEND
-        // This is important because backend might have adjusted other sequences
         await fetchCategories()
       } else {
-        console.error('❌ Failed to update category sequence')
-        
-        // 5️⃣ REVERT ON ERROR: Restore original order
-        setCategories(categories)
-        alert('Failed to update category order. Please try again.')
+        // read backend error payload
+        let msg = `Failed to update category order (status ${response.status})`
+        try {
+          const data = await response.json()
+          msg = data?.error || data?.message || msg
+        } catch {}
+        setCategories(categories) // revert
+        alert(msg)
       }
     } catch (err) {
-      console.error('❌ Error updating category:', err)
-      
-      // REVERT ON ERROR
-      setCategories(categories)
-      alert('An error occurred while updating category order.')
+      setCategories(categories) // revert
+      alert('Network error while updating category order.')
     } finally {
       setUpdating(false)
     }
@@ -270,10 +247,26 @@ export function Category() {
       if (response.ok) {
         setCategories((prev) => prev.filter((cat) => cat._id !== categoryId))
       } else {
-        console.error('Failed to delete category:', response.status)
+        // Read and surface backend error
+        let msg = `Failed to delete category (status ${response.status})`
+        try {
+          const data = await response.json()
+          // ResponseHandler returns { message, error }
+          msg = data?.error || data?.message || msg
+        } catch {
+          // If body is not JSON or already consumed, keep default msg
+        }
+
+        // Optionally handle specific codes differently
+        if (response.status === 403 || response.status === 409) {
+          alert(msg) // e.g., "Category cannot be deleted while it has active workouts..."
+        } else {
+          alert(msg)
+        }
       }
     } catch (err) {
       console.error('Error deleting category:', err)
+      alert('Network error while deleting category.')
     }
   }
 
@@ -318,7 +311,6 @@ export function Category() {
               </button>
             </div>
 
-            {/* Show updating indicator */}
             {updating && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
                 🔄 Updating category order...
@@ -331,7 +323,6 @@ export function Category() {
               <div className="py-10 text-center text-gray-500">No categories found</div>
             ) : (
               <div className="overflow-x-auto">
-                {/* 🎯 DND CONTEXT WRAPS THE TABLE */}
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -339,11 +330,8 @@ export function Category() {
                   onDragEnd={handleDragEnd}
                   autoScroll={{
                     enabled: true,
-                    threshold: {
-                      x: 0,      // Disable horizontal auto-scroll
-                      y: 0.1,    // Vertical scroll only near edges (10% threshold)
-                    },
-                    acceleration: 3,  // Slower, more controlled scrolling
+                    threshold: { x: 0, y: 0.1 },
+                    acceleration: 3,
                   }}
                 >
                   <table className="w-full text-left border-collapse">
@@ -355,8 +343,6 @@ export function Category() {
                         <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    
-                    {/* 🎯 SORTABLE CONTEXT WRAPS TBODY */}
                     <SortableContext
                       items={categories.map((cat) => cat._id)}
                       strategy={verticalListSortingStrategy}

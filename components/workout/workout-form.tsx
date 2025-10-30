@@ -1,8 +1,7 @@
-// app/workouts/WorkoutForm.tsx
-
 "use client"
 
 import React, { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,14 +14,15 @@ interface Category {
 }
 
 export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () => void, redirectTo?: string }) {
+  const searchParams = useSearchParams()
+  const categoryIdFromUrl = searchParams.get('categoryId')
+
   const [form, setForm] = useState({
     name: '',
-    level: 'beginner', // UI value; will be converted to Capitalized on submit (e.g., Beginner, Intermediate, Advanced)
-    duration: '',
+    level: 'beginner',
     introduction: '',
-    // description removed
     categoryIds: [] as string[],
-    caloriesBurned: '' // optional numeric input
+    caloriesBurned: ''
   })
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -72,9 +72,16 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
         const cats: Category[] = Array.isArray((data as any)?.data) ? (data as any).data : []
         if (mounted) {
           setCategories(cats)
-          // Preselect first category for convenience (optional)
+          
+          // Preselect category based on URL param or fallback to first category
           if (cats.length > 0 && form.categoryIds.length === 0) {
-            setForm(prev => ({ ...prev, categoryIds: [cats[0]._id] }))
+            if (categoryIdFromUrl && cats.some(cat => cat._id === categoryIdFromUrl)) {
+              // If valid categoryId in URL, preselect it
+              setForm(prev => ({ ...prev, categoryIds: [categoryIdFromUrl] }))
+            } else {
+              // Fallback to first category
+              setForm(prev => ({ ...prev, categoryIds: [cats[0]._id] }))
+            }
           }
         }
       } catch (err: any) {
@@ -85,20 +92,16 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
     }
     loadCategories()
     return () => { mounted = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // load once
+  }, [categoryIdFromUrl]) // Added categoryIdFromUrl as dependency
 
   const capitalizeFirstLetter = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s
 
   const handleSave = async () => {
     setErrorMsg(null)
 
-    // Validations
     if (!form.name.trim()) return setErrorMsg('Name is required')
-    if (!form.duration || isNaN(Number(form.duration))) return setErrorMsg('Duration must be a number')
     if (!form.level) return setErrorMsg('Level is required')
     if (!form.introduction.trim()) return setErrorMsg('Introduction is required')
-    // description removed from validation
     if (!form.categoryIds.length) return setErrorMsg('Select at least one category')
     if (!banner) return setErrorMsg('Banner image is required')
     if (!thumbnail) return setErrorMsg('Thumbnail image is required')
@@ -109,23 +112,17 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
     setIsSaving(true)
     try {
       const fd = new FormData()
-      // Required fields
       fd.append('name', form.name)
 
-      // Map UI level to capitalized string ('beginner' -> 'Beginner', etc.)
       const levelCapitalized = capitalizeFirstLetter(form.level)
       fd.append('level', levelCapitalized)
 
-      fd.append('duration', String(Number(form.duration)))
       fd.append('introduction', form.introduction)
-      // description removed from payload
 
-      // Optional caloriesBurned if provided
       if (form.caloriesBurned) {
         fd.append('caloriesBurned', String(Number(form.caloriesBurned)))
       }
 
-      // Append multiple categoryIds as array indices
       form.categoryIds.forEach((id, index) => {
         fd.append(`categoryIds[${index}]`, id)
       })
@@ -133,7 +130,6 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
       if (banner) fd.append('banner', banner, banner.name)
       if (thumbnail) fd.append('thumbnail', thumbnail, thumbnail.name)
 
-      // Auth header only; do not set Content-Type for FormData
       const headers: Record<string, string> = { ...(authUtils.getAuthHeader() as Record<string, string>) }
 
       const res = await fetch('/api/workout/admin/create', { method: 'POST', headers, body: fd })
@@ -226,12 +222,6 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
             <option value="intermediate">intermediate</option>
             <option value="advanced">advanced</option>
           </select>
-          {/* Note: will be sent as Capitalized to backend (Beginner/Intermediate/Advanced) */}
-        </div>
-
-        <div>
-          <Label>Duration (minutes)</Label>
-          <Input value={form.duration} onChange={(e) => handleChange('duration', e.target.value)} />
         </div>
 
         <div>
@@ -242,8 +232,6 @@ export default function WorkoutForm({ onSuccess, redirectTo }: { onSuccess?: () 
             placeholder="Short intro for this workout"
           />
         </div>
-
-        {/* Description input removed */}
 
         <div>
           <Label>Calories Burned (estimate)</Label>
