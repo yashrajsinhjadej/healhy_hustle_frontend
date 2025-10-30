@@ -16,7 +16,7 @@ type WorkoutVideo = {
   description?: string;
   youtubeUrl?: string;
   duration?: number;
-  sequence?: number;
+  // sequence removed
 };
 
 type WorkoutDTO = {
@@ -26,7 +26,12 @@ type WorkoutDTO = {
 };
 
 function isValidUrl(str: string) {
-  try { new URL(str); return true } catch { return false }
+  try {
+    new URL(str);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export default function EditWorkoutVideos() {
@@ -39,7 +44,6 @@ export default function EditWorkoutVideos() {
   const [description, setDescription] = useState<string>("");
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
   const [duration, setDuration] = useState<string>("");
-  const [sequence, setSequence] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -54,7 +58,10 @@ export default function EditWorkoutVideos() {
         setError(null);
         setInfo(null);
 
-        if (!workoutId) { setError("Invalid workout id."); return }
+        if (!workoutId) {
+          setError("Invalid workout id.");
+          return;
+        }
 
         const res = await authenticatedFetch("/api/workout/get-by-id", {
           method: "POST",
@@ -81,7 +88,7 @@ export default function EditWorkoutVideos() {
         }
 
         const list = Array.isArray(workout.videos) ? workout.videos : [];
-        const target = videoId ? list.find(v => v._id === videoId) : list[0];
+        const target = videoId ? list.find((v) => v._id === videoId) : list[0];
         if (!target) {
           setError("Target video not found.");
           return;
@@ -92,7 +99,6 @@ export default function EditWorkoutVideos() {
         setDescription(target.description ?? "");
         setYoutubeUrl(target.youtubeUrl ?? "");
         setDuration(target.duration !== undefined ? String(target.duration) : "");
-        setSequence(target.sequence !== undefined ? String(target.sequence) : "");
       } catch (e: any) {
         setError(e?.message || "Unable to load workout/video.");
       } finally {
@@ -100,7 +106,9 @@ export default function EditWorkoutVideos() {
       }
     }
     load();
-    return () => { mounted = false };
+    return () => {
+      mounted = false;
+    };
   }, [workoutId, videoId]);
 
   function validate(): string | null {
@@ -110,11 +118,6 @@ export default function EditWorkoutVideos() {
       const d = Number(duration);
       if (isNaN(d)) return "Duration must be a number";
       if (d <= 0) return "Duration must be greater than 0 seconds";
-    }
-    if (sequence.trim()) {
-      const s = Number(sequence);
-      if (isNaN(s)) return "Sequence must be a number";
-      if (s <= 0) return "Sequence must be greater than 0";
     }
     return null;
   }
@@ -128,7 +131,10 @@ export default function EditWorkoutVideos() {
       return;
     }
     const vErr = validate();
-    if (vErr) { setError(vErr); return }
+    if (vErr) {
+      setError(vErr);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -140,7 +146,7 @@ export default function EditWorkoutVideos() {
       if (description.trim()) payload.description = description.trim();
       if (youtubeUrl.trim()) payload.youtubeUrl = youtubeUrl.trim();
       if (duration.trim()) payload.duration = Number(duration);
-      if (sequence.trim()) payload.sequence = Number(sequence);
+      // sequence removed
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -154,16 +160,18 @@ export default function EditWorkoutVideos() {
       });
 
       const ct = res.headers.get("content-type") || "";
-      const data = ct.includes("application/json") ? await res.json() : { message: await res.text() };
+      const data = ct.includes("application/json")
+        ? await res.json()
+        : { message: await res.text() };
 
       if (!res.ok) {
         setError((data as any)?.error || (data as any)?.message || "Failed to update video");
         return;
       }
 
-  setInfo("Video updated successfully.");
-  // Redirect to the workout page after successful save
-  window.location.href = `/Category/workouts/${encodeURIComponent(workoutId)}`;
+      setInfo("Video updated successfully.");
+      // Redirect to the workout page after successful save
+      window.location.href = `/Category/workouts/${encodeURIComponent(workoutId)}`;
     } catch (e: any) {
       setError(e?.message || "Failed to update video");
     } finally {
@@ -184,7 +192,12 @@ export default function EditWorkoutVideos() {
     <div className="max-w-3xl mx-auto p-6">
       <div className="mb-4 text-sm text-gray-600">
         Editing video for workout: <span className="font-mono">{workoutId || "-"}</span>
-        {videoId && <> — videoId: <span className="font-mono">{videoId}</span></>}
+        {videoId && (
+          <>
+            {" "}
+            — videoId: <span className="font-mono">{videoId}</span>
+          </>
+        )}
       </div>
 
       {error && <div className="mb-4 text-red-600">{error}</div>}
@@ -198,26 +211,35 @@ export default function EditWorkoutVideos() {
 
         <div>
           <Label>Description</Label>
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" />
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Optional description"
+          />
         </div>
 
         <div>
           <Label>YouTube URL</Label>
-          <Input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/..." />
+          <Input
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://youtube.com/..."
+          />
         </div>
 
         <div>
           <Label>Duration (seconds)</Label>
-          <Input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g., 180" />
-        </div>
-
-        <div>
-          <Label>Sequence</Label>
-          <Input value={sequence} onChange={(e) => setSequence(e.target.value)} placeholder="e.g., 1" />
+          <Input
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="e.g., 180"
+          />
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => window.history.back()}>Cancel</Button>
+          <Button variant="outline" onClick={() => window.history.back()}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : (
               <>

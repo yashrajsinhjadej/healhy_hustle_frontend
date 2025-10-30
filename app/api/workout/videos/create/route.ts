@@ -39,8 +39,7 @@ export async function POST(request: NextRequest) {
       typeof p.title === "string" &&
       typeof p.description === "string" &&
       typeof p.youtubeUrl === "string" &&
-      typeof p.duration === "number" &&
-      typeof p.sequence === "number"
+      typeof p.duration === "number" 
 
     if (!valid) {
       return NextResponse.json(

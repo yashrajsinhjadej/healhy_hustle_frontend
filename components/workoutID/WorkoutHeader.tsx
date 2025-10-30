@@ -7,25 +7,19 @@ interface WorkoutHeaderProps {
   name: string
   durationText: string
   level: string
-  category: string
   onBack?: () => void
   backPath?: string // e.g. "/cms/dashboard" or "/workouts"
 }
 
 export const WorkoutHeader = ({
   name,
-  durationText,
+  durationText,   
   level,
-  category,
   onBack,
-  backPath = "/workouts", // default if not provided
+  // backPath = "Category/workouts", // default if not provided
 }: WorkoutHeaderProps) => {
   const router = useRouter()
 
-  const handleBack = () => {
-    if (onBack) return onBack()
-    router.push(backPath)
-  }
 
   return (
     <div className="mb-6">
@@ -40,10 +34,7 @@ export const WorkoutHeader = ({
           <Target className="w-4 h-4 text-gray-500" />
           <span className="capitalize">{level}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Dumbbell className="w-4 h-4 text-gray-500" />
-          <span>{category}</span>
-        </div>
+       
       </div>
     </div>
   )

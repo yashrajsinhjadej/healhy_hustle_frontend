@@ -1,3 +1,5 @@
+// src/app/Category/workouts/[id]/videos/create/page.tsx
+
 "use client"
 
 import { useState } from "react"
@@ -18,7 +20,6 @@ export default function CreateWorkoutVideoPage() {
     description: "",
     youtubeUrl: "",
     duration: "",
-    sequence: "",
   })
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -32,7 +33,6 @@ export default function CreateWorkoutVideoPage() {
     if (!form.description.trim()) return "Description is required"
     if (!form.youtubeUrl.trim()) return "YouTube URL is required"
     if (!form.duration || isNaN(Number(form.duration))) return "Duration must be a number (seconds)"
-    if (!form.sequence || isNaN(Number(form.sequence))) return "Sequence must be a number"
     return null
   }
 
@@ -59,7 +59,7 @@ export default function CreateWorkoutVideoPage() {
           description: form.description.trim(),
           youtubeUrl: form.youtubeUrl.trim(),
           duration: Number(form.duration),
-          sequence: Number(form.sequence),
+          // sequence removed — handled by backend
         }),
       })
 
@@ -73,8 +73,6 @@ export default function CreateWorkoutVideoPage() {
         return
       }
 
-      // Backend returns full updated workout at payload.data; we only care about videos later
-      // Redirect back to workout details; the page can update videos from payload if you pass it via state or refetch
       router.push(`/Category/workouts/${workoutId}`)
     } catch (err: any) {
       console.error("Failed to create workout video", err)
@@ -129,14 +127,6 @@ export default function CreateWorkoutVideoPage() {
                 value={form.duration}
                 onChange={(e) => handleChange("duration", e.target.value)}
                 placeholder="e.g. 180"
-              />
-            </div>
-            <div>
-              <Label>Sequence</Label>
-              <Input
-                value={form.sequence}
-                onChange={(e) => handleChange("sequence", e.target.value)}
-                placeholder="e.g. 1"
               />
             </div>
           </div>

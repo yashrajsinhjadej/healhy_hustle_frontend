@@ -119,7 +119,7 @@ export default function WorkoutDetailsPage() {
               name={workout.name}
               durationText={formatTotalDuration(totalDurationSeconds)}
               level={levelText}
-              category={typeText}
+              
               onBack={() => router.back()}
             />
 
