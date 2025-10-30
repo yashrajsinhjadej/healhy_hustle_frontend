@@ -163,7 +163,7 @@ export default function EditWorkoutVideos() {
 
   setInfo("Video updated successfully.");
   // Redirect to the workout page after successful save
-  window.location.href = `/workouts/${encodeURIComponent(workoutId)}`;
+  window.location.href = `/Category/workouts/${encodeURIComponent(workoutId)}`;
     } catch (e: any) {
       setError(e?.message || "Failed to update video");
     } finally {

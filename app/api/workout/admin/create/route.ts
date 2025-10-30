@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-
+import { getBackendApiUrl,API_ENDPOINTS } from '@/lib/backend-config'
 // Proxy route: forwards the incoming request (including multipart bodies) to the backend
 export async function POST(req: Request) {
   try {
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'BACKEND_URL not configured' }, { status: 500 })
     }
 
-    const backendUrl = `${backendBase.replace(/\/$/, '')}/api/workout/admin/create`
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_CREATE_WORKOUT)
 
     // Forward headers
     const forwardedHeaders: Record<string,string> = {}

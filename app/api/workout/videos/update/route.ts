@@ -1,5 +1,6 @@
 // app/api/workout/videos/update/route.ts
 
+import { API_ENDPOINTS, getBackendApiUrl } from "@/lib/backend-config"
 import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!backendBase) {
       return NextResponse.json({ error: "BACKEND_URL not configured" }, { status: 500 })
     }
-    const backendUrl = `${backendBase.replace(/\/$/, "")}/api/workout/videos/update`
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_VIDEO_UPDATE)
 
     const authHeader = req.headers.get("authorization") || undefined
 

@@ -1,7 +1,7 @@
 // app/api/workout/get-by-id/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getBackendApiUrl } from '@/lib/backend-config'
+import { API_ENDPOINTS, getBackendApiUrl } from '@/lib/backend-config'
 
 // This route reads request.headers (authorization) and must be dynamic.
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
 
     // Use the dynamic workoutId in backend path params
-    const backendUrl = getBackendApiUrl(`/api/workout/admin/getworkoutbyid/${encodeURIComponent(workoutId)}`)
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_GET_WORKOUT_BY_ID(workoutId))
 
     const backendResponse = await fetch(backendUrl, {
       method: 'GET',

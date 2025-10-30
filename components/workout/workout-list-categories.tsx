@@ -1,3 +1,4 @@
+// filename: app/Category/workouts/page.tsx (or wherever this component lives)
 "use client"
 
 import { useEffect, useState } from 'react'
@@ -20,6 +21,7 @@ interface Workout {
 interface WorkoutsResponse {
   message: string
   data: Workout[]
+  error?: string
 }
 
 export default function WorkoutsList() {
@@ -56,7 +58,7 @@ export default function WorkoutsList() {
         const response: WorkoutsResponse = await res.json()
 
         if (!res.ok) {
-          setError((response as any)?.error || 'Failed to fetch workouts')
+          setError(response?.error || 'Failed to fetch workouts')
           return
         }
 
@@ -86,14 +88,20 @@ export default function WorkoutsList() {
 
   async function handleDelete(workoutId: string, e: React.MouseEvent) {
     e.stopPropagation()
-    
+
     const ok = confirm('Delete this workout? This action cannot be undone.')
     if (!ok) return
 
     try {
       setDeletingId(workoutId)
-      const res = await authenticatedFetch(`/api/workout/admin/delete/${workoutId}`, {
-        method: 'DELETE'
+
+      const res = await authenticatedFetch(`/api/workout/admin/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Send workoutId in JSON body; change key if your API expects `id`
+        body: JSON.stringify({ workoutId }),
       })
 
       if (res.status === 401) {
@@ -102,8 +110,8 @@ export default function WorkoutsList() {
       }
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Failed to delete' }))
-        alert(err?.message || 'Failed to delete workout')
+        const errJson = await res.json().catch(() => ({ message: 'Failed to delete' }))
+        alert(errJson?.message || 'Failed to delete workout')
         return
       }
 
@@ -156,7 +164,9 @@ export default function WorkoutsList() {
                     className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-colors"
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/Category/workouts/edit?id=${encodeURIComponent(workout._id)}&&categoryId=${encodeURIComponent(categoryId)}`)
+                      router.push(
+                        `/Category/workouts/edit?id=${encodeURIComponent(workout._id)}&&categoryId=${encodeURIComponent(categoryId)}`
+                      )
                     }}
                   >
                     Edit

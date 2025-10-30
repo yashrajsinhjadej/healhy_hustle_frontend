@@ -1,6 +1,6 @@
 // app/api/workout/videos/create/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { getBackendApiUrl } from "@/lib/backend-config"
+import { API_ENDPOINTS, getBackendApiUrl } from "@/lib/backend-config"
 
 export const dynamic = "force-dynamic"
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build backend URL
-    const backendUrl = getBackendApiUrl(`/api/workout/videos/create`)
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_VIDEO_CREATE)
 
     // Proxy request to backend
     const res = await fetch(backendUrl, {

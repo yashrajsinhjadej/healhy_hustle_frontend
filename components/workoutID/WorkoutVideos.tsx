@@ -100,7 +100,7 @@ export const WorkoutVideos = ({
               alert("Missing workoutId to create video.")
               return
             }
-            router.push(`/workouts/${workoutId}/video/create`)
+            router.push(`/Category/workouts/${workoutId}/video/create`)
           }}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -155,7 +155,7 @@ export const WorkoutVideos = ({
                         alert("Missing workoutId to edit video.")
                         return
                       }
-                      router.push(`/workouts/${workoutId}/video/edit?videoId=${encodeURIComponent(v._id)}`)
+                      router.push(`/Category/workouts/${workoutId}/video/edit?videoId=${encodeURIComponent(v._id)}`)
                     }}
                     className="w-full gap-1 text-gray-700 border-gray-300 hover:bg-gray-50"
                   >

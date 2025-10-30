@@ -1,5 +1,6 @@
 // app/api/workout/admin/update/[id]/route.ts
 
+import { API_ENDPOINTS, getBackendApiUrl } from "@/lib/backend-config";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -7,21 +8,14 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const backendBase = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-    if (!backendBase) {
-      console.error("❌ BACKEND_URL not configured");
-      return NextResponse.json({ error: "Backend URL not configured" }, { status: 500 });
-    }
-
     const workoutId = params.id;
     if (!workoutId) {
       return NextResponse.json({ error: "Workout ID is required (in path)" }, { status: 400 });
     }
 
-    const backendUrl = `${backendBase.replace(/\/$/, "")}/api/workout/admin/update/${encodeURIComponent(workoutId)}`;
+    const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_UPDATE_WORKOUT(workoutId))
     console.log(`🔄 Proxying update request to: ${backendUrl}`);
 
-    // Forward safe headers; do not override Content-Type for multipart
     const forwardedHeaders: Record<string, string> = {};
     req.headers.forEach((value, key) => {
       const k = key.toLowerCase();

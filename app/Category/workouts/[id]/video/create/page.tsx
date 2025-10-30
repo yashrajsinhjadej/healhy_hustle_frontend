@@ -75,7 +75,7 @@ export default function CreateWorkoutVideoPage() {
 
       // Backend returns full updated workout at payload.data; we only care about videos later
       // Redirect back to workout details; the page can update videos from payload if you pass it via state or refetch
-      router.push(`/workouts/${workoutId}`)
+      router.push(`/Category/workouts/${workoutId}`)
     } catch (err: any) {
       console.error("Failed to create workout video", err)
       setErrorMsg(err?.message || "Failed to create workout video")

@@ -63,9 +63,9 @@ export const API_ENDPOINTS = {
   ADMIN_LOGOUT: '/api/admin/logout',
   ADMIN_FORGOT_PASSWORD: '/api/admin/forgot-password',
   ADMIN_RESET_PASSWORD: '/api/admin/reset-password',
-  ADMIN_EXPORT_CSV:'/api/admin/dashboard/export',
   
   // Admin Dashboard & Users
+  ADMIN_EXPORT_CSV:'/api/admin/dashboard/export',
   ADMIN_DASHBOARD: '/api/admin/dashboard',
   ADMIN_USERS: '/api/admin/users',
   ADMIN_USER_BY_ID: (userId: string) => `/api/admin/users/${userId}`,
@@ -73,19 +73,29 @@ export const API_ENDPOINTS = {
   // User Profile
   ADMIN_PROFILE: '/api/admin/profile',
 
-  ADMIN_WORKOUTS_LIST: '/api/workout/user/listworkout',
-
+  //Category 
   ADMIN_CATEGORY_LIST: '/api/workout/admin/category/list',
-
   ADMIN_CATEGORY_CREATE: '/api/workout/admin/category/create',
-
-  ADMIN_WORKOUT_BY_CATEGORY: '/api/workout/user/getcategory',
-
-  GET_WORKOUT_BY_ID: '/api/workout/user/getworkoutbyid',
-
   ADMIN_CATEGORY_UPDATE: (userID: string) => `/api/workout/admin/category/update/${userID}`,
   ADMIN_CATEGORY_DELETE: (userID: string) => `/api/workout/admin/category/delete/${userID}`,
   ADMIN_CATEGORY_DETAILS: (userID: string) => `/api/workout/admin/category/list/${userID}`,
+
+  //workouts
+  ADMIN_WORKOUTS_LIST: '/api/workout/user/listworkout',
+  ADMIN_WORKOUT_BY_CATEGORY: '/api/workout/user/getcategory',
+  ADMIN_CREATE_WORKOUT:'/api/workout/admin/create',
+  ADMIN_DELETE_WORKOUT:'/api/workout/admin/delete',
+  ADMIN_UPDATE_WORKOUT: (userId:string) => `/api/workout/admin/update/${userId}`,
+  ADMIN_GET_WORKOUT_BY_ID: (userId:string) => `/api/workout/admin/getworkoutbyid/${userId}`,
+  
+
+  //videos 
+
+
+  ADMIN_VIDEO_CREATE : '/api/workout/admin/videos/create',
+  ADMIN_VIDEO_DELETE : `/api/workout/admin/videos/delete`,
+  ADMIN_VIDEO_UPDATE :  `/api/workout/admin/videos/update`,
+
 
 
 } as const
