@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { authenticatedFetch, authUtils, User as UserType } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
 
+
 export default function CategoryWorkoutsPage() {
   const router = useRouter()
   const params = useParams()

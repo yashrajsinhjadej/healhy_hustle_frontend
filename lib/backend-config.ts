@@ -5,6 +5,8 @@
  * and construct full endpoint URLs for API calls.
  */
 
+import AdminResetPasswordPage from "@/app/admin/reset-password/page"
+
 // Get the backend URL from environment variables
 const getBackendUrl = (): string => {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
@@ -85,6 +87,7 @@ export const API_ENDPOINTS = {
   ADMIN_WORKOUT_BY_CATEGORY: '/api/workout/user/getcategory',
   ADMIN_CREATE_WORKOUT:'/api/workout/admin/create',
   ADMIN_DELETE_WORKOUT:'/api/workout/admin/delete',
+  ADMIN_UPDATE_WORKOUT_SEQUENCE:'/api/workout/admin/updatesequence',
   ADMIN_UPDATE_WORKOUT: (userId:string) => `/api/workout/admin/update/${userId}`,
   ADMIN_GET_WORKOUT_BY_ID: (userId:string) => `/api/workout/admin/getworkoutbyid/${userId}`,
   

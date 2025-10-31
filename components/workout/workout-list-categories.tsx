@@ -1,3 +1,4 @@
+// filename: components/workout/workout-list-categories.tsx
 "use client"
 
 import { useEffect, useState } from 'react'
@@ -31,7 +32,7 @@ interface Workout {
   duration: number
   thumbnailUrl?: string
   exerciseCount?: number
-  // Add any extra fields as needed
+  sequence?: number
 }
 
 function SortableWorkoutRow({
@@ -69,7 +70,6 @@ function SortableWorkoutRow({
       {...listeners}
       className="border-b hover:bg-gray-50 transition-colors cursor-pointer"
     >
-      {/* Thumbnail column from backend */}
       <td
         className="py-3 px-4"
         onClick={e => {
@@ -88,8 +88,6 @@ function SortableWorkoutRow({
           </div>
         </div>
       </td>
-      
-      {/* Title */}
       <td
         className="py-3 px-4"
         onClick={e => {
@@ -99,8 +97,6 @@ function SortableWorkoutRow({
       >
         <div className="font-medium text-gray-900">{workout.name}</div>
       </td>
-
-      {/* Level */}
       <td
         className="py-3 px-4"
         onClick={e => {
@@ -110,8 +106,6 @@ function SortableWorkoutRow({
       >
         {workout.level}
       </td>
-
-      {/* Duration */}
       <td
         className="py-3 px-4 text-gray-700"
         onClick={e => {
@@ -121,8 +115,6 @@ function SortableWorkoutRow({
       >
         {workout.duration} min
       </td>
-
-      {/* Exercises */}
       <td
         className="py-3 px-4 text-gray-700"
         onClick={e => {
@@ -132,8 +124,6 @@ function SortableWorkoutRow({
       >
         {workout.exerciseCount ?? 0}
       </td>
-      
-      {/* Actions */}
       <td className="py-3 px-4 text-right" onClick={e => e.stopPropagation()}>
         <button
           className="inline-flex items-center gap-1 text-gray-600 hover:text-black mr-3 px-3 py-1.5 rounded hover:bg-gray-100 transition-colors"
@@ -242,20 +232,61 @@ export default function WorkoutsList() {
   }
 
   const handleDragStart = (event: DragStartEvent) => setIsDragging(true)
+
   const handleDragEnd = async (event: DragEndEvent) => {
     setIsDragging(false)
     const { active, over } = event
     if (!over || active.id === over.id) return
+
     const oldIndex = workouts.findIndex(wk => wk._id === active.id)
     const newIndex = workouts.findIndex(wk => wk._id === over.id)
+
+    const prevState = workouts
+
+    // Optimistic reorder (no global +1 here; mirror video logic)
     const reordered = arrayMove(workouts, oldIndex, newIndex)
     setWorkouts(reordered)
+
+    // Prepare payload for ONLY the dragged item, matching video logic
+    const workoutId = String(active.id)
+    // If backend is 1-based, use newIndex + 1; if not, use newIndex.
+    const newSequence = newIndex + 1 // change to `newIndex` if you decide 0-based
+
     setUpdating(true)
     try {
-      // Optionally send new order to backend here
-      // await authenticatedFetch(...)
-    } catch {
-      setWorkouts(workouts)
+      const res = await authenticatedFetch(`/api/workout/admin/updatesequence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workoutId,
+          categoryId,
+          workoutsequence: Number(newSequence),
+        }),
+      })
+      if (res.status === 401) {
+        authUtils.clearAuthData()
+        throw new Error('Unauthorized')
+      }
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(errText || 'Failed to update sequence')
+      }
+
+      // Optional: update local sequence numbers for display consistency
+      setWorkouts(curr => curr.map((w, idx) => ({
+        ...w,
+        sequence: newSequence ? (idx + 1) : idx // keep 1-based if you’re using +1
+      })))
+
+      toast({ title: 'Workout order updated' })
+    } catch (err) {
+      // Revert on error
+      setWorkouts(prevState)
+      toast({
+        title: 'Failed to update order',
+        description: err instanceof Error ? err.message : 'Please try again',
+        variant: 'destructive',
+      })
     } finally {
       setUpdating(false)
     }
