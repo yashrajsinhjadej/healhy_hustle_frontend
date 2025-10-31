@@ -1,3 +1,4 @@
+// filename: lib/auth.ts
 // Authentication utilities for JWT token management
 
 const TOKEN_KEY = 'traynex_auth_token'
@@ -19,7 +20,6 @@ export interface AuthResponse {
 }
 
 export const authUtils = {
-  // Store token and user data
   setAuthData: (token: string, user: User) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_KEY, token)
@@ -85,30 +85,24 @@ export const authUtils = {
   },
 }
 
-// =========================
 // Optional: Cache-busting helper
-// =========================
 export const withCacheBust = (url: string) => {
   const sep = url.includes('?') ? '&' : '?'
   return `${url}${sep}_t=${Date.now()}`
 }
 
-// =========================
-/**
- * Authenticated Fetch Helper (enhanced)
- * - Defaults to cache: 'no-store' to avoid stale responses
- * - Forwards all RequestInit options
- * - Merges auth header
- * - Ensures body is a JSON string if provided
- * - Preserves your existing 401/403 session handling
- */
-// =========================
-
+// ======= Instrumented authenticatedFetch =======
 export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   const token = authUtils.getToken()
+  const method = (options.method || 'GET').toUpperCase()
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : 'server'
 
-  console.log('🌐 [Fetch] Request:', url)
-  console.log('🌐 [Fetch] Token exists:', !!token)
+  // Clear, single-line summary per request
+  console.log(`🌐 [Fetch] ${method} ${url} | route=${pathname} | token=${token ? 'yes' : 'no'}`)
+
+  // Clickable caller stack in DevTools → reveals the component/line initiating the request
+  // eslint-disable-next-line no-console
+  console.trace('[Fetch] call stack')
 
   // Merge headers (auth first, then caller-provided headers)
   const headers: HeadersInit = {
@@ -120,7 +114,7 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   // Default to no-store unless explicitly overridden per request
   const cache = options.cache ?? 'no-store'
 
-  // Ensure body is a string if provided
+  // Ensure body is a JSON string if provided
   let body = options.body
   if (body && typeof body !== 'string') {
     try {
@@ -139,12 +133,11 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
 
   const response = await fetch(url, finalOptions)
 
-  console.log(`🌐 [Fetch] Response status: ${response.status}`)
+  console.log(`🌐 [Fetch] Response ${response.status} for ${method} ${url} | route=${pathname}`)
 
-  // 🔐 Handle auth/session errors
+  // Auth/session error handling
   if (response.status === 401 || response.status === 403) {
     let errorMessage = ''
-
     try {
       const clone = response.clone()
       const data = await clone.json()
@@ -164,10 +157,6 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
 
   return response
 }
-
-// =========================
-// Helper Functions
-// =========================
 
 export const isSessionExpiredError = (message: string = ''): boolean => {
   const msg = message.toLowerCase()

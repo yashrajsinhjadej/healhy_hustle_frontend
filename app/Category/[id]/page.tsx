@@ -39,21 +39,7 @@ export default function CategoryWorkoutsPage() {
     fetchUserProfile()
   }, [])
 
-  useEffect(() => {
-    const fetchCategory = async () => {
-      if (!categoryId) return
-      try {
-        const response = await authenticatedFetch(`/api/Category/${categoryId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setCategoryName(data.data?.name || "")
-        }
-      } catch {
-        // ignore
-      }
-    }
-    fetchCategory()
-  }, [categoryId])
+ 
 
   const handleAddWorkout = () => {
     router.push(`/Category/workouts/create?categoryId=${categoryId}`)
