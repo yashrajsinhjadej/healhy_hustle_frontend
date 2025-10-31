@@ -5,7 +5,7 @@ import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { authenticatedFetch } from '@/lib/auth' // Use your existing auth utility
+import { authenticatedFetch } from '@/lib/auth'
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), { 
@@ -60,19 +60,7 @@ export default function AboutUsPage() {
   const loadContent = async () => {
     setIsLoading(true)
     try {
-      // Call Next.js API route which proxies to backend
-      const response = await authenticatedFetch('/api/cms/admin/about-us', {
-        method: 'GET'
-      })
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log('CMS page not found, will create new on save')
-          return
-        }
-        throw new Error(`Failed to load content: ${response.statusText}`)
-      }
-
+      const response = await authenticatedFetch('/api/cms/about')
       const data = await response.json()
 
       if (data.success && data.data) {
@@ -82,6 +70,10 @@ export default function AboutUsPage() {
       }
     } catch (error) {
       console.error('Error loading content:', error)
+      if (error instanceof Error && error.message.includes('404')) {
+        // Page doesn't exist yet, use defaults
+        console.log('CMS page not found, will create new on save')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -113,10 +105,6 @@ export default function AboutUsPage() {
         })
       })
       
-      if (!response.ok) {
-        throw new Error(`Failed to save: ${response.statusText}`)
-      }
-
       const data = await response.json()
       
       if (data.success) {
