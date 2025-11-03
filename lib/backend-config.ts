@@ -100,6 +100,12 @@ export const API_ENDPOINTS = {
   ADMIN_VIDEO_UPDATE :  `/api/workout/admin/videos/update`,
 
 
+  // CMS 
+
+  ADMIN_CMS :(userId:string) => `/api/cms/admin/${userId}`,
+  ADMIN_CREATE_CMS : `/api/cms/admin/create`,
+
+
 
 } as const
 

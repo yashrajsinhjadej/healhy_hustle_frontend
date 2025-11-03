@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBackendApiUrl,API_ENDPOINTS } from '@/lib/backend-config';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
@@ -13,7 +12,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/admin/cms/about-us`, {
+    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_CMS(params.slug)), {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(`${API_BASE_URL}/admin/cms`, {
+    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_CREATE_CMS), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -5,7 +5,7 @@ import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { authenticatedFetch } from '@/lib/auth' // Use your existing auth utility
+import { authenticatedFetch } from '@/lib/auth'
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), { 
@@ -16,13 +16,10 @@ const ReactQuill = dynamic(() => import('react-quill'), {
 // Import Quill styles
 import 'react-quill/dist/quill.snow.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-
 export default function AboutUsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [content, setContent] = useState("")
   const [title, setTitle] = useState("About Us")
-  const [metaDescription, setMetaDescription] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -60,8 +57,7 @@ export default function AboutUsPage() {
   const loadContent = async () => {
     setIsLoading(true)
     try {
-      // Call Next.js API route which proxies to backend
-      const response = await authenticatedFetch('/api/cms/admin/about-us', {
+      const response = await authenticatedFetch('/api/cms/about-us', {
         method: 'GET'
       })
 
@@ -78,7 +74,6 @@ export default function AboutUsPage() {
       if (data.success && data.data) {
         setContent(data.data.htmlContent || '')
         setTitle(data.data.title || 'About Us')
-        setMetaDescription(data.data.metaDescription || '')
       }
     } catch (error) {
       console.error('Error loading content:', error)
@@ -104,12 +99,11 @@ export default function AboutUsPage() {
     setSaveStatus('idle')
     
     try {
-      const response = await authenticatedFetch('/api/cms/about', {
+      const response = await authenticatedFetch('/api/cms/about-us', {
         method: 'POST',
         body: JSON.stringify({
           title,
-          htmlContent: content,
-          metaDescription
+          htmlContent: content
         })
       })
       
@@ -121,8 +115,7 @@ export default function AboutUsPage() {
       
       if (data.success) {
         setSaveStatus('success')
-        alert('✅ Content saved successfully!\n\nMobile app can access at:\n' + 
-              `${API_BASE_URL.replace('/api', '')}/api/public/cms/about-us`)
+        setTimeout(() => setSaveStatus('idle'), 3000)
       } else {
         setSaveStatus('error')
         alert(`Failed to save: ${data.message || 'Unknown error'}`)
@@ -140,13 +133,8 @@ export default function AboutUsPage() {
   // Handle cancel
   const handleCancel = () => {
     if (content && confirm('Are you sure you want to discard changes?')) {
-      loadContent() // Reload original content
+      loadContent()
     }
-  }
-
-  // Get WebView URL for mobile team
-  const getWebViewURL = () => {
-    return `${API_BASE_URL.replace('/api', '')}/api/public/cms/about-us`
   }
 
   if (isLoading) {
@@ -158,7 +146,7 @@ export default function AboutUsPage() {
             userProfile={undefined}
             searchTerm={searchTerm}
             onSearch={(e) => setSearchTerm(e.target.value)}
-            heading="CMS Management (About Us)"
+            heading="CMS Management - About Us"
             placeholder='Search...'
           />
           <div className="p-4 flex items-center justify-center min-h-[400px]">
@@ -177,28 +165,14 @@ export default function AboutUsPage() {
           userProfile={undefined}
           searchTerm={searchTerm}
           onSearch={(e) => setSearchTerm(e.target.value)}
-          heading="CMS Management (About Us)"
+          heading="CMS Management - About Us"
           placeholder='Search...'
         />
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
+              <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-[#000000]">About Us</h1>
-                
-                {/* WebView URL Info */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const url = getWebViewURL()
-                    navigator.clipboard.writeText(url)
-                    alert('WebView URL copied to clipboard!\n\n' + url)
-                  }}
-                  className="text-xs"
-                >
-                  📱 Copy WebView URL
-                </Button>
               </div>
 
               {/* Title field */}
@@ -213,22 +187,6 @@ export default function AboutUsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="About Us"
                 />
-              </div>
-
-              {/* Meta Description */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[#000000] mb-2">
-                  Meta Description (for SEO):
-                </label>
-                <input
-                  type="text"
-                  value={metaDescription}
-                  onChange={(e) => setMetaDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Brief description (max 160 chars)"
-                  maxLength={160}
-                />
-                <p className="text-xs text-gray-500 mt-1">{metaDescription.length}/160 characters</p>
               </div>
               
               <div>
@@ -303,20 +261,6 @@ export default function AboutUsPage() {
                       {isSaving ? 'Saving...' : 'Save & Publish'}
                     </Button>
                   </div>
-                </div>
-
-                {/* Info card */}
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-900 font-medium mb-2">📱 For Mobile Team:</p>
-                  <p className="text-xs text-blue-800 mb-2">
-                    Use this URL in your WebView:
-                  </p>
-                  <code className="block p-2 bg-white rounded text-xs break-all">
-                    {getWebViewURL()}
-                  </code>
-                  <p className="text-xs text-blue-700 mt-2">
-                    This endpoint returns a fully formatted HTML page optimized for mobile viewing.
-                  </p>
                 </div>
               </div>
             </div>

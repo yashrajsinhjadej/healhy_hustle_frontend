@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Dumbbell, Grid3X3, LogOut, ChevronDown, ChevronUp, Info, Phone, FileText, Shield } from "lucide-react"
+import { User, Dumbbell, Grid3X3, LogOut, ChevronDown, ChevronUp, Info,FileQuestion, FileText, Shield } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useEffect, useState } from "react"
 import { authUtils, User as UserType } from "@/lib/auth"
@@ -14,7 +14,7 @@ const sidebarItems = [
 
 const cmsItems = [
   { label: "About Us", icon: Info, href: "/cms/about" },
-  { label: "Contact Us", icon: Phone, href: "/cms/contact" },
+  { label: "Faq", icon: FileQuestion, href: "/cms/faq" },
   { label: "Terms & Conditions", icon: FileText, href: "/cms/terms" },
   { label: "Privacy Policy", icon: Shield, href: "/cms/privacy" },
 ]
