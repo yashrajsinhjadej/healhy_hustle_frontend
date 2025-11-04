@@ -3,7 +3,7 @@
 import { SidebarAdmin } from '@/components/sidebar-admin'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Plus, Edit, Trash2, X, GripVertical } from 'lucide-react'
 import { authenticatedFetch } from '@/lib/auth'
 import { toast } from 'sonner'
@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface FAQItem {
   _id: string
@@ -32,12 +33,15 @@ export default function FAQPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [faqItems, setFaqItems] = useState<FAQItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showContent, setShowContent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [draggedItem, setDraggedItem] = useState<FAQItem | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [userProfile, setUserProfile] = useState<any>(null)
   
   // Form state for creating FAQ
   const [newQuestion, setNewQuestion] = useState("")
@@ -49,9 +53,37 @@ export default function FAQPage() {
   const [editAnswer, setEditAnswer] = useState("")
   const [editIsActive, setEditIsActive] = useState(true)
 
-  // Fetch FAQ items on mount
+  // Fetch FAQ items on mount with deferred transition
   useEffect(() => {
-    fetchFAQItems()
+    const fetchUserProfile = async () => {
+      try {
+        const response = await authenticatedFetch('/api/users/profile', {
+          method: 'GET'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data) {
+            setUserProfile(data.data)
+          }
+        }
+      } catch (error) {
+        // Silently fail - user profile is optional for this page
+        console.error('Failed to fetch user profile:', error)
+      }
+    }
+
+    fetchUserProfile()
+    
+    // Show content after brief delay to let page structure render first
+    const timer = setTimeout(() => {
+      setShowContent(true)
+    }, 150)
+    
+    startTransition(() => {
+      fetchFAQItems()
+    })
+    
+    return () => clearTimeout(timer)
   }, [])
 
   const fetchFAQItems = async () => {
@@ -303,7 +335,7 @@ export default function FAQPage() {
       <SidebarAdmin />
       <div className="flex-1">
         <Navbar 
-          userProfile={undefined}
+          userProfile={userProfile}
           searchTerm={searchTerm}
           onSearch={(e) => setSearchTerm(e.target.value)}
           heading="CMS Management (FAQ)"
@@ -317,13 +349,37 @@ export default function FAQPage() {
                 <Button 
                   className="bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-2"
                   onClick={() => setIsCreateModalOpen(true)}
+                  disabled={!showContent}
                 >
                   <Plus className="w-4 h-4" />
                   Add New FAQ
                 </Button>
               </div>
 
-              {isLoading ? (
+              {!showContent ? (
+                <div className="space-y-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="h-5 w-5 rounded bg-gray-200" />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex gap-2">
+                            <Skeleton className="h-5 w-12 bg-gray-200" />
+                            <Skeleton className="h-5 w-16 bg-gray-200" />
+                          </div>
+                          <Skeleton className="h-6 w-3/4 bg-gray-200" />
+                          <Skeleton className="h-16 w-full bg-gray-200" />
+                          <Skeleton className="h-4 w-32 bg-gray-200" />
+                        </div>
+                        <div className="flex gap-2">
+                          <Skeleton className="h-9 w-9 bg-gray-200" />
+                          <Skeleton className="h-9 w-9 bg-gray-200" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : isLoading ? (
                 <div className="text-center py-8 text-gray-500">Loading FAQ items...</div>
               ) : error ? (
                 <div className="text-center py-8 text-red-500">{error}</div>

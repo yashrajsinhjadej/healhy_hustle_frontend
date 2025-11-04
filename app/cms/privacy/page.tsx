@@ -211,11 +211,13 @@ export default function PrivacyPolicyPage() {
                   />
                 </div>
 
+                {/* Mobile Preview */}
                 {content && (
-                  <div className="mt-6">
+                  <div className="mt-8">
                     <p className="text-sm font-medium text-gray-700 mb-3">📱 Mobile Preview:</p>
                     <div className="mx-auto border-4 border-gray-800 rounded-3xl overflow-hidden bg-white shadow-lg"
                          style={{ width: 375, maxWidth: '100%' }}>
+                      {/* Status bar mock */}
                       <div className="h-6 bg-gray-100 flex items-center justify-between px-3 text-[10px] text-gray-600">
                         <span>9:41</span>
                         <div className="flex gap-1 items-center">
@@ -224,6 +226,7 @@ export default function PrivacyPolicyPage() {
                           <span>🔋</span>
                         </div>
                       </div>
+                      {/* Content area */}
                       <div className="p-4 max-h-[600px] overflow-y-auto">
                         <div 
                           className="prose prose-sm max-w-none"

@@ -27,8 +27,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="view-transition" content="same-origin" />
+      </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${workSans.variable}`}>
-        <Suspense fallback={null}>{children}</Suspense>
+        <Suspense fallback={<div className="min-h-screen bg-[#f4f5f6]" />}>
+          {children}
+        </Suspense>
         <Toaster position="top-right" />
         <Analytics />
       </body>

@@ -3,15 +3,21 @@
 import { SidebarAdmin } from '@/components/sidebar-admin'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import dynamic from 'next/dynamic'
 import { authenticatedFetch } from '@/lib/auth'
 import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
-// Import Quill dynamically to avoid SSR issues
+// Import Quill dynamically with better loading optimization
 const ReactQuill = dynamic(() => import('react-quill'), { 
   ssr: false,
-  loading: () => <p>Loading editor...</p>
+  loading: () => (
+    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+      <Skeleton className="h-10 w-full mb-4 bg-gray-200" />
+      <Skeleton className="h-64 w-full bg-gray-200" />
+    </div>
+  )
 })
 
 // Import Quill styles
@@ -22,8 +28,11 @@ export default function AboutUsPage() {
   const [content, setContent] = useState("")
   const [title, setTitle] = useState("About Us")
   const [isSaving, setIsSaving] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingContent, setIsLoadingContent] = useState(true)
+  const [showEditor, setShowEditor] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [isPending, startTransition] = useTransition()
+  const [userProfile, setUserProfile] = useState<any>(null)
 
   // Quill editor modules configuration
   const modules = {
@@ -50,13 +59,42 @@ export default function AboutUsPage() {
     'link', 'image'
   ]
 
-  // Load existing content on mount
+  // Load user profile and show editor after brief delay
   useEffect(() => {
-    loadContent()
+    const fetchUserProfile = async () => {
+      try {
+        const response = await authenticatedFetch('/api/users/profile', {
+          method: 'GET'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data) {
+            setUserProfile(data.data)
+          }
+        }
+      } catch (error) {
+        // Silently fail - user profile is optional for this page
+        console.error('Failed to fetch user profile:', error)
+      }
+    }
+
+    fetchUserProfile()
+    
+    // Show editor after brief delay to let page structure render first
+    const timer = setTimeout(() => {
+      setShowEditor(true)
+    }, 150)
+    
+    // Load content in background with transition
+    startTransition(() => {
+      loadContent()
+    })
+    
+    return () => clearTimeout(timer)
   }, [])
 
   const loadContent = async () => {
-    setIsLoading(true)
+    setIsLoadingContent(true)
     try {
       const response = await authenticatedFetch('/api/cms/about-us', {
         method: 'GET'
@@ -80,7 +118,7 @@ export default function AboutUsPage() {
       // Keep error logging for production debugging
       console.error('Error loading content:', error)
     } finally {
-      setIsLoading(false)
+      setIsLoadingContent(false)
     }
   }
 
@@ -140,132 +178,78 @@ export default function AboutUsPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen bg-[#f4f5f6]">
-        <SidebarAdmin />
-        <div className="flex-1">
-          <Navbar 
-            userProfile={undefined}
-            searchTerm={searchTerm}
-            onSearch={(e) => setSearchTerm(e.target.value)}
-            heading="CMS Management - About Us"
-            placeholder='Search...'
-          />
-          <div className="p-4 flex items-center justify-center min-h-[400px]">
-            <p className="text-gray-600">Loading content...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-screen bg-[#f4f5f6]">
       <SidebarAdmin />
       <div className="flex-1">
         <Navbar 
-          userProfile={undefined}
+          userProfile={userProfile}
           searchTerm={searchTerm}
           onSearch={(e) => setSearchTerm(e.target.value)}
           heading="CMS Management - About Us"
           placeholder='Search...'
         />
-        <div className="p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white border border-blue-200 rounded-lg p-6">
-              <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-[#000000]">About Us</h1>
+        <div className="p-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-2xl font-bold mb-6">About Us Content</h2>
+            
+            {!showEditor ? (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <Skeleton className="h-10 w-full mb-4 bg-gray-200" />
+                <Skeleton className="h-64 w-full bg-gray-200" />
               </div>
-
-              {/* Title field */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[#000000] mb-2">
-                  Page Title:
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="About Us"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#000000] mb-2">
-                  Content:
-                </label>
-                
-                {/* Quill Editor */}
-                <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
-                  <ReactQuill
-                    theme="snow"
-                    value={content}
-                    onChange={handleChange}
-                    modules={modules}
-                    formats={formats}
-                    placeholder="Start writing about us..."
-                    className="min-h-[400px]"
-                  />
-                </div>
-                
-                {/* Mobile Preview */}
-                {content && (
-                  <div className="mt-6">
-                    <p className="text-sm font-medium text-gray-700 mb-3">📱 Mobile Preview:</p>
-                    <div className="mx-auto border-4 border-gray-800 rounded-3xl overflow-hidden bg-white shadow-lg"
-                         style={{ width: 375, maxWidth: '100%' }}>
-                      {/* Status bar mock */}
-                      <div className="h-6 bg-gray-100 flex items-center justify-between px-3 text-[10px] text-gray-600">
-                        <span>9:41</span>
-                        <div className="flex gap-1 items-center">
-                          <span>▮▮▮▮</span>
-                          <span>📶</span>
-                          <span>🔋</span>
-                        </div>
-                      </div>
-                      {/* Content area */}
-                      <div className="p-4 max-h-[600px] overflow-y-auto">
-                        <div 
-                          className="prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ __html: content }}
-                        />
-                      </div>
+            ) : (
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={handleChange}
+                modules={modules}
+                formats={formats}
+                className="bg-white min-h-[400px]"
+              />
+            )}
+            
+            {/* Mobile Preview */}
+            {content && showEditor && (
+              <div className="mt-8">
+                <p className="text-sm font-medium text-gray-700 mb-3">📱 Mobile Preview:</p>
+                <div className="mx-auto border-4 border-gray-800 rounded-3xl overflow-hidden bg-white shadow-lg"
+                     style={{ width: 375, maxWidth: '100%' }}>
+                  {/* Status bar mock */}
+                  <div className="h-6 bg-gray-100 flex items-center justify-between px-3 text-[10px] text-gray-600">
+                    <span>9:41</span>
+                    <div className="flex gap-1 items-center">
+                      <span>▮▮▮▮</span>
+                      <span>📶</span>
+                      <span>🔋</span>
                     </div>
                   </div>
-                )}
-                
-                {/* Action buttons */}
-                <div className="flex items-center justify-between mt-6">
-                  <div>
-                    {saveStatus === 'success' && (
-                      <span className="text-sm text-green-600 font-medium">✓ Saved successfully</span>
-                    )}
-                    {saveStatus === 'error' && (
-                      <span className="text-sm text-red-600 font-medium">✗ Save failed</span>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="border-gray-300 text-gray-700"
-                      onClick={handleCancel}
-                      disabled={isSaving}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      className="bg-gray-800 text-white hover:bg-gray-900"
-                      onClick={handleSave}
-                      disabled={isSaving || !content.trim()}
-                    >
-                      {isSaving ? 'Saving...' : 'Save & Publish'}
-                    </Button>
+                  {/* Content area */}
+                  <div className="p-4 max-h-[600px] overflow-y-auto">
+                    <div 
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: content }}
+                    />
                   </div>
                 </div>
               </div>
+            )}
+            
+            <div className="flex justify-end gap-2 mt-16">
+              <Button
+                onClick={handleCancel}
+                variant="outline"
+                disabled={isSaving || !showEditor}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || !content.trim() || !showEditor || isPending}
+                className="bg-[#3d7b51] hover:bg-[#2d5a3d]"
+              >
+                {isSaving ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : 'Save Changes'}
+              </Button>
             </div>
           </div>
         </div>

@@ -96,7 +96,12 @@ export function SidebarAdmin() {
                 onClick={() => router.push(item.href)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") router.push(item.href) }}
+                onKeyDown={e => { 
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    router.push(item.href)
+                  }
+                }}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
@@ -116,7 +121,12 @@ export function SidebarAdmin() {
               onClick={handleCmsClick}
               role="button"
               tabIndex={0}
-              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleCmsClick() }}
+              onKeyDown={e => { 
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  handleCmsClick()
+                }
+              }}
             >
               <div className="flex items-center gap-3">
                 <Grid3X3 className="w-5 h-5" />
@@ -146,7 +156,12 @@ export function SidebarAdmin() {
                       onClick={() => router.push(item.href)}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") router.push(item.href) }}
+                      onKeyDown={e => { 
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          router.push(item.href)
+                        }
+                      }}
                     >
                       <item.icon className="w-4 h-4" />
                       <span>{item.label}</span>

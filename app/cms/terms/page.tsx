@@ -206,7 +206,7 @@ export default function TermsAndConditionsPage() {
                 
                 {/* Mobile Preview */}
                 {content && (
-                  <div className="mt-6">
+                  <div className="mt-8">
                     <p className="text-sm font-medium text-gray-700 mb-3">📱 Mobile Preview:</p>
                     <div className="mx-auto border-4 border-gray-800 rounded-3xl overflow-hidden bg-white shadow-lg"
                          style={{ width: 375, maxWidth: '100%' }}>

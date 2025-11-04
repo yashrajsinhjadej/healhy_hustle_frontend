@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     // console.log('🔍 [Profile API] Making request to backend...')
     // console.log('🔍 [Profile API] Auth header:', authHeader ? 'Present' : 'Missing')
     
-    // Fetch data from the real API endpoint
-    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD), {
+    // Fetch data from the correct profile endpoint
+    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_PROFILE), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -59,18 +59,36 @@ export async function GET(request: NextRequest) {
     }
 
     const apiData = await response.json()
-    const adminData = apiData.data.admin
+    
+    // Check if the response has the expected structure
+    // Profile endpoint returns: { success: true, data: { admin: {...} } }
+    if (!apiData || !apiData.data) {
+      console.error('❌ [Profile API] Unexpected API response structure:', apiData)
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Invalid API response structure',
+          message: 'Failed to fetch user profile'
+        },
+        { status: 500 }
+      )
+    }
+    
+    // Handle both possible response structures
+    // Option 1: { data: { admin: {...} } } - from profile endpoint
+    // Option 2: { data: {...} } - direct admin object
+    const adminData = apiData.data.admin || apiData.data
 
     // Format the admin data for the frontend
     const currentUser = {
-      id: adminData.id,
+      id: adminData.id || adminData._id,
       name: adminData.name,
       email: adminData.email,
-      username: adminData.name.toLowerCase().replace(/\s+/g, '_'),
+      username: adminData.username || adminData.name.toLowerCase().replace(/\s+/g, '_'),
       role: adminData.role,
-      avatar: adminData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
-      lastLogin: new Date().toISOString(),
-      createdAt: new Date().toISOString()
+      avatar: adminData.avatar || adminData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
+      lastLogin: adminData.lastLogin || new Date().toISOString(),
+      createdAt: adminData.createdAt || new Date().toISOString()
     }
     
     return NextResponse.json({
@@ -80,7 +98,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching user profile:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+        message: 'Failed to fetch user profile'
+      },
       { status: 500 }
     )
   }
