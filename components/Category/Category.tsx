@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar'
 import { authenticatedFetch, authUtils } from '@/lib/auth'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import {
   DndContext,
@@ -171,11 +172,11 @@ export function Category() {
           msg = data?.error || data?.message || msg
         } catch {}
         console.error(msg)
-        alert(msg)
+        toast.error(msg)
       }
     } catch (err) {
       console.error('Error fetching categories:', err)
-      alert('Network error while fetching categories.')
+      toast.error('Network error while fetching categories.')
     } finally {
       setLoading(false)
     }
@@ -214,6 +215,7 @@ export function Category() {
 
       if (response.ok) {
         await fetchCategories()
+        toast.success('Category order updated successfully')
       } else {
         // read backend error payload
         let msg = `Failed to update category order (status ${response.status})`
@@ -222,11 +224,11 @@ export function Category() {
           msg = data?.error || data?.message || msg
         } catch {}
         setCategories(categories) // revert
-        alert(msg)
+        toast.error(msg)
       }
     } catch (err) {
       setCategories(categories) // revert
-      alert('Network error while updating category order.')
+      toast.error('Network error while updating category order.')
     } finally {
       setUpdating(false)
     }
@@ -246,6 +248,7 @@ export function Category() {
 
       if (response.ok) {
         setCategories((prev) => prev.filter((cat) => cat._id !== categoryId))
+        toast.success('Category deleted successfully')
       } else {
         // Read and surface backend error
         let msg = `Failed to delete category (status ${response.status})`
@@ -259,14 +262,14 @@ export function Category() {
 
         // Optionally handle specific codes differently
         if (response.status === 403 || response.status === 409) {
-          alert(msg) // e.g., "Category cannot be deleted while it has active workouts..."
+          toast.error(msg) // e.g., "Category cannot be deleted while it has active workouts..."
         } else {
-          alert(msg)
+          toast.error(msg)
         }
       }
     } catch (err) {
       console.error('Error deleting category:', err)
-      alert('Network error while deleting category.')
+      toast.error('Network error while deleting category.')
     }
   }
 

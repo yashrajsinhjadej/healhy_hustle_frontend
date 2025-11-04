@@ -58,7 +58,8 @@ export const authUtils = {
 
   logout: async (): Promise<{ success: boolean; message?: string }> => {
     try {
-      console.log('🚪 [Auth] Logging out...')
+      // Uncomment for debugging:
+      // console.log('🚪 [Auth] Logging out...')
 
       const response = await fetch('/api/admin/logout', {
         method: 'POST',
@@ -70,7 +71,8 @@ export const authUtils = {
 
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ [Auth] Logout successful:', data.message)
+        // Uncomment for debugging:
+        // console.log('✅ [Auth] Logout successful:', data.message)
       } else {
         console.warn('⚠ [Auth] Logout API failed, clearing local data anyway.')
       }
@@ -78,7 +80,8 @@ export const authUtils = {
       console.error('❌ [Auth] Logout API error:', error)
     } finally {
       authUtils.clearAuthData()
-      console.log('🧹 [Auth] Local data cleared')
+      // Uncomment for debugging:
+      // console.log('🧹 [Auth] Local data cleared')
     }
 
     return { success: true, message: 'Logged out successfully' }
@@ -97,12 +100,9 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   const method = (options.method || 'GET').toUpperCase()
   const pathname = typeof window !== 'undefined' ? window.location.pathname : 'server'
 
-  // Clear, single-line summary per request
-  console.log(`🌐 [Fetch] ${method} ${url} | route=${pathname} | token=${token ? 'yes' : 'no'}`)
-
-  // Clickable caller stack in DevTools → reveals the component/line initiating the request
-  // eslint-disable-next-line no-console
-  console.trace('[Fetch] call stack')
+  // Uncomment for debugging:
+  // console.log(`🌐 [Fetch] ${method} ${url} | route=${pathname} | token=${token ? 'yes' : 'no'}`)
+  // console.trace('[Fetch] call stack')
 
   // Merge headers (auth first, then caller-provided headers)
   const headers: HeadersInit = {
@@ -133,7 +133,8 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
 
   const response = await fetch(url, finalOptions)
 
-  console.log(`🌐 [Fetch] Response ${response.status} for ${method} ${url} | route=${pathname}`)
+  // Uncomment for debugging:
+  // console.log(`🌐 [Fetch] Response ${response.status} for ${method} ${url} | route=${pathname}`)
 
   // Auth/session error handling
   if (response.status === 401 || response.status === 403) {
@@ -142,14 +143,17 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
       const clone = response.clone()
       const data = await clone.json()
       errorMessage = data?.message || data?.error || ''
-      console.warn('🚨 [Fetch] Auth error:', errorMessage)
+      
+      // Uncomment for debugging:
+      // console.warn('🚨 [Fetch] Auth error:', errorMessage)
 
       if (isSessionExpiredError(errorMessage)) {
         handleSessionExpiration(errorMessage)
         return response // prevent further handling after redirect
       }
     } catch (err) {
-      console.warn('⚠️ [Fetch] Could not parse error response; assuming expired token')
+      // Uncomment for debugging:
+      // console.warn('⚠️ [Fetch] Could not parse error response; assuming expired token')
       handleSessionExpiration()
       return response
     }
@@ -172,7 +176,8 @@ export const isSessionExpiredError = (message: string = ''): boolean => {
 }
 
 export const handleSessionExpiration = (reason?: string) => {
-  console.warn('🔒 [Auth] Session expired. Redirecting to login...', reason || 'unknown reason')
+  // Uncomment for debugging:
+  // console.warn('🔒 [Auth] Session expired. Redirecting to login...', reason || 'unknown reason')
   authUtils.clearAuthData()
 
   if (typeof window !== 'undefined') {

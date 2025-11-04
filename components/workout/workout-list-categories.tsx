@@ -23,7 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import { authenticatedFetch, authUtils } from '@/lib/auth'
-import { toast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface Workout {
   _id: string
@@ -221,13 +221,13 @@ export default function WorkoutsList() {
       })
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({ message: 'Failed to delete' }))
-        alert(errJson?.message || 'Failed to delete workout')
+        toast.error(errJson?.message || 'Failed to delete workout')
         return
       }
       setWorkouts(prev => prev.filter(item => item._id !== id))
-      toast({ title: 'Workout was deleted' })
+      toast.success('Workout was deleted')
     } catch {
-      alert('Failed to delete workout')
+      toast.error('Failed to delete workout')
     }
   }
 
@@ -275,18 +275,16 @@ export default function WorkoutsList() {
       // Optional: update local sequence numbers for display consistency
       setWorkouts(curr => curr.map((w, idx) => ({
         ...w,
-        sequence: newSequence ? (idx + 1) : idx // keep 1-based if you’re using +1
+        sequence: newSequence ? (idx + 1) : idx // keep 1-based if you're using +1
       })))
 
-      toast({ title: 'Workout order updated' })
+      toast.success('Workout order updated')
     } catch (err) {
       // Revert on error
       setWorkouts(prevState)
-      toast({
-        title: 'Failed to update order',
-        description: err instanceof Error ? err.message : 'Please try again',
-        variant: 'destructive',
-      })
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update order. Please try again'
+      )
     } finally {
       setUpdating(false)
     }

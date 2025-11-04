@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { authenticatedFetch } from '@/lib/auth'
+import { toast } from 'sonner'
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), { 
@@ -63,7 +64,7 @@ export default function AboutUsPage() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('CMS page not found, will create new on save')
+          // CMS page not found, will create new on save
           return
         }
         throw new Error(`Failed to load content: ${response.statusText}`)
@@ -76,6 +77,7 @@ export default function AboutUsPage() {
         setTitle(data.data.title || 'About Us')
       }
     } catch (error) {
+      // Keep error logging for production debugging
       console.error('Error loading content:', error)
     } finally {
       setIsLoading(false)
@@ -91,7 +93,7 @@ export default function AboutUsPage() {
   // Handle save
   const handleSave = async () => {
     if (!content.trim()) {
-      alert('Content cannot be empty')
+      toast.error('Content cannot be empty')
       return
     }
 
@@ -115,16 +117,17 @@ export default function AboutUsPage() {
       
       if (data.success) {
         setSaveStatus('success')
+        toast.success('Content saved successfully!')
         setTimeout(() => setSaveStatus('idle'), 3000)
       } else {
         setSaveStatus('error')
-        alert(`Failed to save: ${data.message || 'Unknown error'}`)
+        toast.error(`Failed to save: ${data.message || 'Unknown error'}`)
       }
       
     } catch (error) {
       console.error('Error saving content:', error)
       setSaveStatus('error')
-      alert('Failed to save content. Please try again.')
+      toast.error('Failed to save content. Please try again.')
     } finally {
       setIsSaving(false)
     }

@@ -9,7 +9,8 @@ export async function POST(
 ) {
   try {
     const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_UPDATE_WORKOUT_SEQUENCE);
-    console.log(`🔄 Proxying update request to: ${backendUrl}`);
+    // Uncomment for debugging:
+    // console.log(`🔄 Proxying update request to: ${backendUrl}`);
 
     // 1) Parse JSON body from the incoming request
     const incoming = await req.json().catch(() => null);
@@ -62,10 +63,13 @@ export async function POST(
     const responseText = await backendRes.text();
 
     if (!backendRes.ok) {
+      // Keep error logging for production debugging
       console.error(`❌ Backend error (${backendRes.status}):`, responseText);
-    } else {
-      console.log(`✅ Workout sequence updated`);
     }
+    // Uncomment for debugging:
+    // else {
+    //   console.log(`✅ Workout sequence updated`);
+    // }
 
     return new NextResponse(responseText, {
       status: backendRes.status,

@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Play, Pencil, Trash, Plus } from "lucide-react"
+import { toast } from "sonner"
 
 // 🎯 DND-KIT IMPORTS
 import {
@@ -286,14 +287,14 @@ export const WorkoutVideos = ({
         
         // 5️⃣ REVERT ON ERROR
         setSortedVideos(sortedVideos)
-        alert('Failed to update video order. Please try again.')
+        toast.error('Failed to update video order. Please try again.')
       }
     } catch (err) {
       console.error('❌ Error updating video:', err)
       
       // REVERT ON ERROR
       setSortedVideos(sortedVideos)
-      alert('An error occurred while updating video order.')
+      toast.error('An error occurred while updating video order.')
     } finally {
       setUpdating(false)
     }
@@ -341,7 +342,7 @@ export const WorkoutVideos = ({
     e.stopPropagation()
     
     if (!workoutId) {
-      alert("Missing workoutId to delete video.")
+      toast.error("Missing workoutId to delete video.")
       return
     }
 
@@ -383,16 +384,17 @@ export const WorkoutVideos = ({
         // Remove from local state
         setSortedVideos(prev => prev.filter(v => v._id !== video._id))
       }
+      toast.success(`Video "${video.title}" deleted successfully`)
     } catch (err: any) {
       console.error("Delete video error:", err)
-      alert(err?.message || "Unable to delete video. Please try again.")
+      toast.error(err?.message || "Unable to delete video. Please try again.")
     }
   }
 
   const handleEdit = (e: React.MouseEvent, videoId: string) => {
     e.stopPropagation()
     if (!workoutId) {
-      alert("Missing workoutId to edit video.")
+      toast.error("Missing workoutId to edit video.")
       return
     }
     router.push(`/Category/workouts/${workoutId}/video/edit?videoId=${encodeURIComponent(videoId)}`)
@@ -412,7 +414,7 @@ export const WorkoutVideos = ({
           className="bg-black text-white hover:bg-gray-900"
           onClick={() => {
             if (!workoutId) {
-              alert("Missing workoutId to create video.")
+              toast.error("Missing workoutId to create video.")
               return
             }
             router.push(`/Category/workouts/${workoutId}/video/create`)

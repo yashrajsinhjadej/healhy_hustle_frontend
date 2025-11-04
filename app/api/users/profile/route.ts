@@ -9,8 +9,9 @@ export async function GET(request: NextRequest) {
     // Get authorization header from request
     const authHeader = request.headers.get('authorization')
     
-    console.log('🔍 [Profile API] Making request to backend...')
-    console.log('🔍 [Profile API] Auth header:', authHeader ? 'Present' : 'Missing')
+    // Uncomment for debugging:
+    // console.log('🔍 [Profile API] Making request to backend...')
+    // console.log('🔍 [Profile API] Auth header:', authHeader ? 'Present' : 'Missing')
     
     // Fetch data from the real API endpoint
     const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_DASHBOARD), {
@@ -21,11 +22,13 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    console.log('🔍 [Profile API] Backend response status:', response.status)
-    console.log('🔍 [Profile API] Backend response ok:', response.ok)
+    // Uncomment for debugging:
+    // console.log('🔍 [Profile API] Backend response status:', response.status)
+    // console.log('🔍 [Profile API] Backend response ok:', response.ok)
 
     if (!response.ok) {
       const errorText = await response.text()
+      // Keep error logging for production debugging
       console.error('❌ [Profile API] Backend error response:', errorText)
       
       // If it's a 401 error, forward it to the frontend for session handling

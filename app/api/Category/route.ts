@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
 
     // Backend endpoint for category list
     const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_CATEGORY_LIST)
-    console.log('Fetching categories from backend URL:', backendUrl)
+    // Uncomment for debugging:
+    // console.log('Fetching categories from backend URL:', backendUrl)
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {

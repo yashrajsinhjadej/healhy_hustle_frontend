@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, X, GripVertical } from 'lucide-react'
 import { authenticatedFetch } from '@/lib/auth'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export default function FAQPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [draggedItem, setDraggedItem] = useState<FAQItem | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   
   // Form state for creating FAQ
   const [newQuestion, setNewQuestion] = useState("")
@@ -63,7 +65,7 @@ export default function FAQPage() {
       
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('FAQ items not found')
+          // FAQ items not found, initialize empty
           setFaqItems([])
           return
         }
@@ -78,6 +80,7 @@ export default function FAQPage() {
         setError(result.message || 'Failed to fetch FAQ items')
       }
     } catch (err) {
+      // Keep error logging for debugging in production
       console.error('Error fetching FAQ items:', err)
       setError('Failed to load FAQ items')
     } finally {
@@ -93,7 +96,7 @@ export default function FAQPage() {
 
   const handleCreateFAQ = async () => {
     if (!newQuestion.trim() || !newAnswer.trim()) {
-      alert('Please fill in both question and answer')
+      toast.error('Please fill in both question and answer')
       return
     }
 
@@ -114,6 +117,7 @@ export default function FAQPage() {
       const result = await response.json()
 
       if (result.success) {
+        toast.success('FAQ created successfully')
         // Refresh the FAQ list
         await fetchFAQItems()
         // Close modal and reset form
@@ -121,11 +125,11 @@ export default function FAQPage() {
         setNewQuestion("")
         setNewAnswer("")
       } else {
-        alert(result.message || 'Failed to create FAQ item')
+        toast.error(result.message || 'Failed to create FAQ item')
       }
     } catch (err) {
       console.error('Error creating FAQ item:', err)
-      alert('Failed to create FAQ item. Please try again.')
+      toast.error('Failed to create FAQ item. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -147,7 +151,7 @@ export default function FAQPage() {
 
   const handleUpdateFAQ = async () => {
     if (!editQuestion.trim() || !editAnswer.trim() || !editingFaq) {
-      alert('Please fill in both question and answer')
+      toast.error('Please fill in both question and answer')
       return
     }
 
@@ -169,6 +173,7 @@ export default function FAQPage() {
       const result = await response.json()
 
       if (result.success) {
+        toast.success('FAQ updated successfully')
         // Refresh the FAQ list
         await fetchFAQItems()
         // Close modal and reset form
@@ -178,11 +183,11 @@ export default function FAQPage() {
         setEditAnswer("")
         setEditIsActive(true)
       } else {
-        alert(result.message || 'Failed to update FAQ item')
+        toast.error(result.message || 'Failed to update FAQ item')
       }
     } catch (err) {
       console.error('Error updating FAQ item:', err)
-      alert('Failed to update FAQ item. Please try again.')
+      toast.error('Failed to update FAQ item. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -201,6 +206,7 @@ export default function FAQPage() {
       return
     }
 
+    setDeletingId(item._id)
     try {
       const response = await authenticatedFetch(`/api/cms/faq/${item._id}`, {
         method: 'DELETE',
@@ -213,14 +219,17 @@ export default function FAQPage() {
       const result = await response.json()
 
       if (result.success) {
+        toast.success('FAQ deleted successfully')
         // Refresh the FAQ list
         await fetchFAQItems()
       } else {
-        alert(result.message || 'Failed to delete FAQ item')
+        toast.error(result.message || 'Failed to delete FAQ item')
       }
     } catch (err) {
       console.error('Error deleting FAQ item:', err)
-      alert('Failed to delete FAQ item. Please try again.')
+      toast.error('Failed to delete FAQ item. Please try again.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -273,13 +282,15 @@ export default function FAQPage() {
       if (!result.success) {
         // Revert on failure
         await fetchFAQItems()
-        alert(result.message || 'Failed to reorder FAQ items')
+        toast.error(result.message || 'Failed to reorder FAQ items')
+      } else {
+        toast.success('FAQ order updated successfully')
       }
     } catch (err) {
       console.error('Error reordering FAQ items:', err)
       // Revert on error
       await fetchFAQItems()
-      alert('Failed to reorder FAQ items. Please try again.')
+      toast.error('Failed to reorder FAQ items. Please try again.')
     }
   }
 
@@ -369,6 +380,7 @@ export default function FAQPage() {
                             size="sm"
                             className="border-gray-300"
                             onClick={() => handleEditClick(item)}
+                            disabled={deletingId === item._id}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -377,8 +389,13 @@ export default function FAQPage() {
                             size="sm"
                             className="border-red-300 text-red-600 hover:bg-red-50"
                             onClick={() => handleDeleteFAQ(item)}
+                            disabled={deletingId === item._id}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            {deletingId === item._id ? (
+                              <span className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
                           </Button>
                         </div>
                       </div>

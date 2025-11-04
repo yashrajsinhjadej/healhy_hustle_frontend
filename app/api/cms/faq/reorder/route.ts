@@ -14,9 +14,29 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
+    // Validation
     if (!body.orderedIds || !Array.isArray(body.orderedIds)) {
       return NextResponse.json(
         { success: false, message: "Invalid request body. Expected 'orderedIds' array." },
+        { status: 400 }
+      );
+    }
+
+    if (body.orderedIds.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "orderedIds array cannot be empty" },
+        { status: 400 }
+      );
+    }
+
+    // Validate each ID is a non-empty string
+    const isValid = body.orderedIds.every(
+      (id: any) => typeof id === 'string' && id.trim().length > 0
+    );
+
+    if (!isValid) {
+      return NextResponse.json(
+        { success: false, message: "All IDs in orderedIds must be non-empty strings" },
         { status: 400 }
       );
     }

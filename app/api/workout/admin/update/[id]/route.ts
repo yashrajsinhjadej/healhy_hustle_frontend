@@ -14,7 +14,8 @@ export async function POST(
     }
 
     const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_UPDATE_WORKOUT(workoutId))
-    console.log(`🔄 Proxying update request to: ${backendUrl}`);
+    // Uncomment for debugging:
+    // console.log(`🔄 Proxying update request to: ${backendUrl}`);
 
     const forwardedHeaders: Record<string, string> = {};
     req.headers.forEach((value, key) => {
@@ -36,10 +37,13 @@ export async function POST(
     const contentType = backendRes.headers.get("content-type") || "application/json";
 
     if (!backendRes.ok) {
+      // Keep error logging for production debugging
       console.error(`❌ Backend error (${backendRes.status}):`, responseText);
-    } else {
-      console.log(`✅ Workout updated successfully: ${workoutId}`);
     }
+    // Uncomment for debugging:
+    // else {
+    //   console.log(`✅ Workout updated successfully: ${workoutId}`);
+    // }
 
     return new NextResponse(responseText, {
       status: backendRes.status,

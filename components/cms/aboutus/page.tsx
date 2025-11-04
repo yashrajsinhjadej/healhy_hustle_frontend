@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { authenticatedFetch } from '@/lib/auth'
+import { toast } from 'sonner'
+import { getBackendBaseUrl } from '@/lib/backend-config'
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), { 
@@ -15,8 +17,6 @@ const ReactQuill = dynamic(() => import('react-quill'), {
 
 // Import Quill styles
 import 'react-quill/dist/quill.snow.css'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
 export default function AboutUsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -88,7 +88,7 @@ export default function AboutUsPage() {
   // Handle save
   const handleSave = async () => {
     if (!content.trim()) {
-      alert('Content cannot be empty')
+      toast.error('Content cannot be empty')
       return
     }
 
@@ -109,17 +109,19 @@ export default function AboutUsPage() {
       
       if (data.success) {
         setSaveStatus('success')
-        alert('✅ Content saved successfully!\n\nMobile app can access at:\n' + 
-              `${API_BASE_URL.replace('/api', '')}/api/public/cms/about-us`)
+        const webviewUrl = `${getBackendBaseUrl()}/api/public/cms/about-us`
+        toast.success('Content saved successfully!', {
+          description: `Mobile app can access at: ${webviewUrl}`
+        })
       } else {
         setSaveStatus('error')
-        alert(`Failed to save: ${data.message || 'Unknown error'}`)
+        toast.error(`Failed to save: ${data.message || 'Unknown error'}`)
       }
       
     } catch (error) {
       console.error('Error saving content:', error)
       setSaveStatus('error')
-      alert('Failed to save content. Please try again.')
+      toast.error('Failed to save content. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -134,7 +136,7 @@ export default function AboutUsPage() {
 
   // Get WebView URL for mobile team
   const getWebViewURL = () => {
-    return `${API_BASE_URL.replace('/api', '')}/api/public/cms/about-us`
+    return `${getBackendBaseUrl()}/api/public/cms/about-us`
   }
 
   if (isLoading) {
@@ -181,7 +183,9 @@ export default function AboutUsPage() {
                   onClick={() => {
                     const url = getWebViewURL()
                     navigator.clipboard.writeText(url)
-                    alert('WebView URL copied to clipboard!\n\n' + url)
+                    toast.success('WebView URL copied to clipboard!', {
+                      description: url
+                    })
                   }}
                   className="text-xs"
                 >

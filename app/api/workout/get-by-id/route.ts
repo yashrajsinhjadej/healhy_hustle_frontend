@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🏋️ [Get Workout By ID] Fetching workout:', workoutId)
+    // Uncomment for debugging:
+    // console.log('🏋️ [Get Workout By ID] Fetching workout:', workoutId)
 
     const authHeader = request.headers.get('authorization')
 
@@ -34,19 +35,22 @@ export async function POST(request: NextRequest) {
       cache: 'no-store',
     })
 
-    console.log('🏋️ [Get Workout By ID] Backend response status:', backendResponse.status)
+    // Uncomment for debugging:
+    // console.log('🏋️ [Get Workout By ID] Backend response status:', backendResponse.status)
 
     const backendData = await backendResponse.json().catch(() => null)
 
     if (backendResponse.ok) {
-      console.log('✅ [Get Workout By ID] Workout data received:', backendData)
+      // Uncomment for debugging:
+      // console.log('✅ [Get Workout By ID] Workout data received:', backendData)
       return NextResponse.json({
         success: true,
         data: backendData?.data ?? backendData,
         message: backendData?.message || 'Workout retrieved successfully',
       })
     } else {
-      console.log('❌ [Get Workout By ID] Backend error:', backendData)
+      // Uncomment for debugging:
+      // console.log('❌ [Get Workout By ID] Backend error:', backendData)
       return NextResponse.json(
         {
           success: false,
@@ -57,6 +61,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
+    // Keep error logging for production debugging
     console.error('❌ [Get Workout By ID] Error:', error)
     return NextResponse.json(
       {

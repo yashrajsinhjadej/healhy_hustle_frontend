@@ -35,7 +35,7 @@ export function Navbar({ userProfile, onSearch, searchTerm, heading ,placeholder
             />
           </div>
           <Avatar className="w-10 h-10">
-            <AvatarImage src="/diverse-user-avatars.png" />
+            <AvatarImage src={userProfile?.avatar || "/placeholder-user.jpg"} />
             <AvatarFallback className="bg-[#7b7b7b] text-white">
               {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : 'JD'}
             </AvatarFallback>

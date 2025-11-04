@@ -10,6 +10,7 @@ import { SidebarAdmin } from "@/components/sidebar-admin"
 import { Navbar } from "@/components/navbar"
 import { authenticatedFetch, authUtils, User as UserType, isSessionExpiredError, handleSessionExpiration } from "@/lib/auth"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 // Drawer components from shadcn/ui
 import {
   Drawer,
@@ -144,7 +145,7 @@ export function UserManagement() {
   
       if (!response.ok) {
         const errorData = await response.json()
-        alert(errorData.error || "Failed to export CSV")
+        toast.error(errorData.error || "Failed to export CSV")
         return
       }
   
@@ -156,8 +157,9 @@ export function UserManagement() {
       document.body.appendChild(link)
       link.click()
       link.remove()
+      toast.success("CSV exported successfully")
     } catch (error) {
-      alert("Something went wrong while exporting CSV")
+      toast.error("Something went wrong while exporting CSV")
       console.error(error)
     }
   }

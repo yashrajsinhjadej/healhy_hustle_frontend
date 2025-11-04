@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🏋️ [Get Workout By Category] Fetching workouts for category:', categoryId)
+    // Uncomment for debugging:
+    // console.log('🏋️ [Get Workout By Category] Fetching workouts for category:', categoryId)
 
     // Get authorization header from the request
     const authHeader = request.headers.get('authorization')
@@ -36,15 +37,14 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    console.log(
-      '🏋️ [Get Workout By ID] Backend response status:',
-      backendResponse.status
-    )
+    // Uncomment for debugging:
+    // console.log('🏋️ [Get Workout By ID] Backend response status:', backendResponse.status)
 
     const backendData = await backendResponse.json()
 
     if (backendResponse.ok) {
-      console.log('✅ [Get Workout By Category] Workout data received:', backendData)
+      // Uncomment for debugging:
+      // console.log('✅ [Get Workout By Category] Workout data received:', backendData)
 
       // Send only the actual workout object to frontend
       return NextResponse.json({
@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
         message: backendData.message || 'Workout retrieved successfully',
       })
     } else {
-      console.log('❌ [Get Workout By Category] Backend error:', backendData)
+      // Uncomment for debugging:
+      // console.log('❌ [Get Workout By Category] Backend error:', backendData)
 
       return NextResponse.json(
         {

@@ -58,6 +58,27 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Input validation
+    if (!body.question || typeof body.question !== 'string' || !body.question.trim()) {
+      return NextResponse.json(
+        { success: false, message: "Question is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.answer || typeof body.answer !== 'string' || !body.answer.trim()) {
+      return NextResponse.json(
+        { success: false, message: "Answer is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize inputs (trim whitespace)
+    const sanitizedBody = {
+      question: body.question.trim().substring(0, 500), // Max 500 chars
+      answer: body.answer.trim().substring(0, 2000), // Max 2000 chars
+    };
+
     const backendUrl = getBackendApiUrl(API_ENDPOINTS.ADMIN_FAQ_CREATE);
 
     const response = await fetch(backendUrl, {
@@ -66,7 +87,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(sanitizedBody),
       cache: "no-store",
     });
 

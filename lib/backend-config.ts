@@ -5,8 +5,6 @@
  * and construct full endpoint URLs for API calls.
  */
 
-import AdminResetPasswordPage from "@/app/admin/reset-password/page"
-
 // Get the backend URL from environment variables
 const getBackendUrl = (): string => {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
@@ -33,7 +31,8 @@ export const getBackendApiUrl = (endpoint: string): string => {
   
   const fullUrl = `${baseUrl}${normalizedEndpoint}`
   
-  console.log('🔗 [Backend Config] Constructed URL:', fullUrl)
+  // Uncomment for debugging:
+  // console.log('🔗 [Backend Config] Constructed URL:', fullUrl)
   return fullUrl
 }
 

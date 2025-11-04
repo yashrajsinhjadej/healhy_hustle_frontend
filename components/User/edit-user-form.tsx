@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { authenticatedFetch } from "@/lib/auth"
+import { toast } from "sonner"
 
 interface User {
   id: string
@@ -190,7 +191,7 @@ export function EditUserForm({ userId }: EditUserFormProps) {
       const result = await response.json()
       console.log('✅ [EditUserForm] User updated successfully:', result)
       
-      alert("User updated successfully!")
+      toast.success("User updated successfully!")
       router.push("/dashboard")
       
     } catch (error) {

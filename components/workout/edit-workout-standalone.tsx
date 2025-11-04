@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Save, X, Loader2 } from 'lucide-react'
 import { authUtils, authenticatedFetch } from '@/lib/auth'
+import { toast } from 'sonner'
 
 interface Category {
   _id: string
@@ -205,7 +206,7 @@ export default function EditWorkoutForm({ redirectTo }: { redirectTo?: string })
         return
       }
       
-      alert('Workout updated successfully!')
+      toast.success('Workout updated successfully!')
       window.history.back()
       
     } catch (err: any) {
