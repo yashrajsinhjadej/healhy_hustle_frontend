@@ -104,6 +104,11 @@ export const API_ENDPOINTS = {
 
   ADMIN_CMS :(userId:string) => `/api/cms/admin/${userId}`,
   ADMIN_CREATE_CMS : `/api/cms/admin/create`,
+  ADMIN_FAQ_LIST: '/api/cms/admin/faq',
+  ADMIN_FAQ_CREATE: '/api/cms/admin/faq',
+  ADMIN_FAQ_UPDATE: (faqId: string) => `/api/cms/admin/faq/${faqId}`,
+  ADMIN_FAQ_DELETE: (faqId: string) => `/api/cms/admin/faq/${faqId}`,
+  ADMIN_FAQ_REORDER: '/api/cms/admin/faq/reorder',
 
 
 
