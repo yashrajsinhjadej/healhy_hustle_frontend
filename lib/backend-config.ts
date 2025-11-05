@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
   
   // User Profile
   ADMIN_PROFILE: '/api/admin/profile',
+  
 
   //Category 
   ADMIN_CATEGORY_LIST: '/api/workout/admin/category/list',
