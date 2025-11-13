@@ -67,7 +67,7 @@ export default function TermsAndConditionsPage() {
           return
         }
         throw new Error(`Failed to load content: ${response.statusText}`)
-      }
+}
 
       const data = await response.json()
 

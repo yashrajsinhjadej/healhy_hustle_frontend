@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Dumbbell, Grid3X3, LogOut, ChevronDown, ChevronUp, Info,FileQuestion, FileText, Shield } from "lucide-react"
+import { User, Dumbbell, Grid3X3, LogOut, ChevronDown, ChevronUp, Info, FileQuestion, FileText, Shield, Bell } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useEffect, useState } from "react"
 import { authUtils, User as UserType } from "@/lib/auth"
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 const sidebarItems = [
   { label: "User management", icon: User, href: "/dashboard" },
   { label: "Training session management", icon: Dumbbell, href: "/Category" },
+  { label: "Notifications", icon: Bell, href: "/notification" },
 ]
 
 const cmsItems = [
@@ -80,9 +81,11 @@ export function SidebarAdmin() {
       <nav className="flex-1 px-4 overflow-y-auto">
         <div className="space-y-1">
           {sidebarItems.map((item) => {
-            // Make 'Training session management' active for all /workouts subroutes
+            // Make items active for their routes and subroutes
             const isActive = item.href === '/Category'
               ? pathname.startsWith('/Category')
+              : item.href === '/notification'
+              ? pathname.startsWith('/notification')
               : pathname === item.href;
             return (
               <div

@@ -32,40 +32,41 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { slug: string } }
+) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+    const tokenHeader = request.headers.get('authorization');
+    const token = tokenHeader?.startsWith('Bearer ') ? tokenHeader.slice(7) : tokenHeader;
     if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
 
-    const response = await fetch(getBackendApiUrl(API_ENDPOINTS.ADMIN_CREATE_CMS), {
+    // Use CMS endpoint, not workout category
+    const url = getBackendApiUrl(API_ENDPOINTS.ADMIN_CMS(params.slug));
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
+      // Do NOT hardcode about-us; pass the actual slug and fields
       body: JSON.stringify({
-        slug: 'about-us',
-        ...body
+        slug: params.slug,
+        title: body.title,
+        htmlContent: body.htmlContent
       }),
       cache: 'no-store'
     });
 
     const data = await response.json();
-    
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Error saving CMS content:', error);
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }
