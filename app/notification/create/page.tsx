@@ -1,4 +1,5 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import { SidebarAdmin } from '@/components/sidebar-admin'
 import { Navbar } from '@/components/navbar'
@@ -8,131 +9,172 @@ import { toast } from "sonner"
 import { ArrowLeft } from 'lucide-react'
 
 type ScheduleType = 'instant' | 'daily' | 'scheduled_once'
+type TargetAudience = 'all' | 'filtered'
 
 export default function CreateNotificationPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [userProfile, setUserProfile] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
+
   const [formData, setFormData] = useState({
     title: '',
     body: '',
     scheduleType: 'instant' as ScheduleType,
-    scheduledTime: '', // HH:mm format for daily
-    scheduledDate: '', // ISO string for scheduled_once
+    targetAudience: 'all' as TargetAudience,
+    scheduledTime: '',
+    scheduledDate: '',
+    filters: {
+      gender: [] as string[],
+      platform: [] as string[],
+      ageRange: { min: '', max: '' }
+    }
   })
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const storedUser = authUtils.getUser()
-        if (storedUser) {
-          setUserProfile(storedUser)
-          return
-        }
-
-        const response = await authenticatedFetch('/api/users/profile')
-        if (response.ok) {
-          const data = await response.json()
-          setUserProfile(data.user)
-        }
-      } catch {
-        // ignore
-      }
-    }
-    fetchUserProfile()
+    const storedUser = authUtils.getUser()
+    if (storedUser) setUserProfile(storedUser)
   }, [])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  // ============================================================
+  // HANDLE INPUT
+  // ============================================================
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+
+    if (name.startsWith("filters.")) {
+      const [, key, subkey] = name.split(".") // filters.ageRange.min
+
+      setFormData(prev => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          [key]: subkey
+            ? { ...prev.filters[key], [subkey]: value }
+            : value
+        }
+      }))
+      return
+    }
+
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  // ============================================================
+  // TOGGLE BUTTON ARRAYS (gender/platform)
+  // ============================================================
+  const toggleFilterArray = (field: 'gender' | 'platform', value: string) => {
+    setFormData(prev => {
+      const exists = prev.filters[field].includes(value)
+      return {
+        ...prev,
+        filters: {
+          ...prev.filters,
+          [field]: exists
+            ? prev.filters[field].filter(v => v !== value)
+            : [...prev.filters[field], value]
+        }
+      }
+    })
+  }
+
+  // ============================================================
+  // SUBMIT HANDLER
+  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation
-    if (!formData.title.trim()) {
-      toast.error('Title is required')
-      return
+    // BASIC VALIDATIONS
+    if (!formData.title.trim()) return toast.error("Title is required")
+    if (!formData.body.trim()) return toast.error("Message is required")
+
+    if (formData.scheduleType === "daily" && !formData.scheduledTime)
+      return toast.error("Scheduled time is required")
+
+    if (formData.scheduleType === "scheduled_once" && !formData.scheduledDate)
+      return toast.error("Scheduled date is required")
+
+    // AGE VALIDATION (Frontend)
+    const minAge = Number(formData.filters.ageRange.min)
+    const maxAge = Number(formData.filters.ageRange.max)
+
+    if (formData.targetAudience === "filtered") {
+      if (minAge && (minAge < 13 || minAge > 100))
+        return toast.error("Minimum age must be between 13 and 100")
+
+      if (maxAge && (maxAge < 13 || maxAge > 100))
+        return toast.error("Maximum age must be between 13 and 100")
+
+      if (minAge && maxAge && minAge > maxAge)
+        return toast.error("Minimum age cannot be greater than maximum age")
     }
 
-    if (!formData.body.trim()) {
-      toast.error('Message is required')
-      return
-    }
-
-    if (formData.scheduleType === 'daily' && !formData.scheduledTime) {
-      toast.error('Scheduled time is required for daily notifications')
-      return
-    }
-
-    if (formData.scheduleType === 'scheduled_once' && !formData.scheduledDate) {
-      toast.error('Scheduled date is required for one-time scheduled notifications')
-      return
-    }
-
-    // Build request payload
+    // BUILD PAYLOAD
     const payload: any = {
       title: formData.title.trim(),
       body: formData.body.trim(),
       scheduleType: formData.scheduleType,
+      targetAudience: formData.targetAudience
     }
 
-    if (formData.scheduleType === 'daily') {
-      payload.scheduledTime = formData.scheduledTime
-    }
+    if (formData.scheduleType === "daily") payload.scheduledTime = formData.scheduledTime
+    if (formData.scheduleType === "scheduled_once")
+      payload.scheduledDate = new Date(formData.scheduledDate).toISOString()
 
-    if (formData.scheduleType === 'scheduled_once') {
-      // Convert datetime-local to ISO string
-      const dateObj = new Date(formData.scheduledDate)
-      payload.scheduledDate = dateObj.toISOString()
+    if (formData.targetAudience === "filtered") {
+      payload.filters = {}
+
+      if (formData.filters.gender.length > 0)
+        payload.filters.gender = formData.filters.gender
+
+      if (formData.filters.platform.length > 0)
+        payload.filters.platform = formData.filters.platform
+
+      if (formData.filters.ageRange.min || formData.filters.ageRange.max)
+        payload.filters.ageRange = {
+          ...(formData.filters.ageRange.min ? { min: Number(formData.filters.ageRange.min) } : {}),
+          ...(formData.filters.ageRange.max ? { max: Number(formData.filters.ageRange.max) } : {})
+        }
     }
 
     setLoading(true)
     try {
       const response = await authenticatedFetch('/api/notifications/create', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        toast.success('Notification created successfully!')
-        
-        // Redirect based on type
-        setTimeout(() => {
-          if (formData.scheduleType === 'instant') {
-            router.push('/notification?tab=history')
-          } else {
-            router.push('/notification?tab=schedule')
-          }
-        }, 1000)
-      } else {
-        const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to create notification')
+      const data = await response.json()
+      console.log(data)
+      console.log(data.error)
+      /** 🔥 FIXED ERROR HANDLING */
+      if (!response.ok) {
+        const backendMessage =
+          data?.message ||
+          data?.error.status||                     // main backend message
+          data?.errors?.[0]?.message ||        // express-validator format
+          data?.error?.message ||              // nested error
+          "Failed to create notification"
+
+        toast.error(backendMessage)
+        return
       }
+
+      toast.success("Notification created successfully!")
+
+      setTimeout(() => {
+        router.push(
+          `/notification?tab=${
+            formData.scheduleType === "instant" ? "history" : "schedule"
+          }`
+        )
+      }, 800)
     } catch (err) {
-      console.error('Error creating notification:', err)
-      toast.error('Network error while creating notification')
+      toast.error("Network error")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getScheduleTypeLabel = () => {
-    switch (formData.scheduleType) {
-      case 'instant':
-        return 'Instant - Send immediately to all users'
-      case 'daily':
-        return 'Daily - Send every day at a specific time'
-      case 'scheduled_once':
-        return 'Scheduled Once - Send at a specific date and time'
-      default:
-        return ''
     }
   }
 
@@ -144,145 +186,202 @@ export default function CreateNotificationPage() {
         <Navbar
           userProfile={userProfile ?? undefined}
           searchTerm={searchTerm}
-          onSearch={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSearchTerm(e.target.value)
-          }
+          onSearch={(e: any) => setSearchTerm(e.target.value)}
           heading={`Good Morning, ${userProfile?.name || 'User'}`}
           placeholder="Search"
         />
 
         <div className="p-6">
           <div className="max-w-3xl mx-auto">
-            {/* Back Button */}
+
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-600 hover:text-black mb-4 transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:text-black mb-4"
             >
               <ArrowLeft size={20} />
-              <span>Back to Notifications</span>
+              <span>Back</span>
             </button>
 
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h2 className="text-2xl font-semibold mb-6">Create New Notification</h2>
+            <div className="bg-white rounded-xl shadow p-6">
+              <h2 className="text-2xl font-semibold mb-6">Create Notification</h2>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
+
                 {/* Title */}
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                    Title <span className="text-red-500">*</span>
-                  </label>
+                  <label className="text-sm font-medium">Title *</label>
                   <input
                     type="text"
-                    id="title"
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                    placeholder="Enter notification title"
-                    maxLength={100}
+                    className="w-full border rounded-lg px-4 py-2"
                   />
-                  <p className="text-xs text-gray-500 mt-1">{formData.title.length}/100 characters</p>
                 </div>
 
-                {/* Body/Message */}
+                {/* Body */}
                 <div>
-                  <label htmlFor="body" className="block text-sm font-medium text-gray-700 mb-2">
-                    Message <span className="text-red-500">*</span>
-                  </label>
+                  <label className="text-sm font-medium">Message *</label>
                   <textarea
-                    id="body"
                     name="body"
                     value={formData.body}
                     onChange={handleInputChange}
+                    className="w-full border rounded-lg px-4 py-2 resize-none"
                     rows={4}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black resize-none"
-                    placeholder="Enter notification message"
-                    maxLength={500}
                   />
-                  <p className="text-xs text-gray-500 mt-1">{formData.body.length}/500 characters</p>
                 </div>
+
+                {/* Target Audience */}
+                <div>
+                  <label className="text-sm font-medium">Target Audience *</label>
+                  <select
+                    name="targetAudience"
+                    value={formData.targetAudience}
+                    onChange={handleInputChange}
+                    className="w-full border rounded-lg px-4 py-2"
+                  >
+                    <option value="all">All Users</option>
+                    <option value="filtered">Filtered Users</option>
+                  </select>
+                </div>
+
+                {/* FILTERS */}
+                {formData.targetAudience === "filtered" && (
+                  <div className="bg-gray-50 p-4 rounded-xl border space-y-4">
+
+                    {/* Gender */}
+                    <div>
+                      <label className="text-sm font-medium">Gender</label>
+                      <div className="flex gap-3 mt-2">
+                        {["male", "female", "other"].map((g) => (
+                          <button
+                            type="button"
+                            key={g}
+                            onClick={() => toggleFilterArray("gender", g)}
+                            className={`px-4 py-2 rounded-lg border ${
+                              formData.filters.gender.includes(g)
+                                ? "bg-black text-white"
+                                : "bg-white"
+                            }`}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Platform */}
+                    <div>
+                      <label className="text-sm font-medium">Platform</label>
+                      <div className="flex gap-3 mt-2">
+                        {["android", "ios"].map((p) => (
+                          <button
+                            type="button"
+                            key={p}
+                            onClick={() => toggleFilterArray("platform", p)}
+                            className={`px-4 py-2 rounded-lg border ${
+                              formData.filters.platform.includes(p)
+                                ? "bg-black text-white"
+                                : "bg-white"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Age Range */}
+                    <div>
+                      <label className="text-sm font-medium">Age Range</label>
+                      <div className="flex gap-3 mt-2">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          name="filters.ageRange.min"
+                          value={formData.filters.ageRange.min}
+                          onChange={handleInputChange}
+                          className="border rounded-lg px-3 py-2 w-24"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          name="filters.ageRange.max"
+                          value={formData.filters.ageRange.max}
+                          onChange={handleInputChange}
+                          className="border rounded-lg px-3 py-2 w-24"
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                )}
 
                 {/* Schedule Type */}
                 <div>
-                  <label htmlFor="scheduleType" className="block text-sm font-medium text-gray-700 mb-2">
-                    Schedule Type <span className="text-red-500">*</span>
-                  </label>
+                  <label className="text-sm font-medium">Schedule Type *</label>
                   <select
-                    id="scheduleType"
                     name="scheduleType"
                     value={formData.scheduleType}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full border rounded-lg px-4 py-2"
                   >
                     <option value="instant">Instant</option>
                     <option value="daily">Daily</option>
                     <option value="scheduled_once">Scheduled Once</option>
                   </select>
-                  <p className="text-xs text-gray-600 mt-2 bg-blue-50 p-2 rounded">
-                    ℹ️ {getScheduleTypeLabel()}
-                  </p>
                 </div>
 
-                {/* Conditional Fields based on Schedule Type */}
-                {formData.scheduleType === 'daily' && (
+                {/* Daily */}
+                {formData.scheduleType === "daily" && (
                   <div>
-                    <label htmlFor="scheduledTime" className="block text-sm font-medium text-gray-700 mb-2">
-                      Scheduled Time (24-hour format) <span className="text-red-500">*</span>
-                    </label>
+                    <label className="text-sm font-medium">Time *</label>
                     <input
                       type="time"
-                      id="scheduledTime"
                       name="scheduledTime"
                       value={formData.scheduledTime}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full border rounded-lg px-4 py-2"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Notification will be sent every day at this time in the user's timezone
-                    </p>
                   </div>
                 )}
 
-                {formData.scheduleType === 'scheduled_once' && (
+                {/* Scheduled Once */}
+                {formData.scheduleType === "scheduled_once" && (
                   <div>
-                    <label htmlFor="scheduledDate" className="block text-sm font-medium text-gray-700 mb-2">
-                      Scheduled Date & Time <span className="text-red-500">*</span>
-                    </label>
+                    <label className="text-sm font-medium">Date & Time *</label>
                     <input
                       type="datetime-local"
-                      id="scheduledDate"
                       name="scheduledDate"
                       value={formData.scheduledDate}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full border rounded-lg px-4 py-2"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Notification will be sent once at this specific date and time
-                    </p>
                   </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Buttons */}
                 <div className="flex gap-4 pt-4">
                   <button
-                    type="submit"
                     disabled={loading}
-                    className="flex-1 bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 bg-black text-white py-3 rounded-lg"
                   >
-                    {loading ? 'Creating...' : 'Create Notification'}
+                    {loading ? "Creating..." : "Create"}
                   </button>
+
                   <button
                     type="button"
                     onClick={() => router.back()}
                     disabled={loading}
-                    className="px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-6 py-3 border rounded-lg"
                   >
                     Cancel
                   </button>
                 </div>
+
               </form>
             </div>
+
           </div>
         </div>
       </div>

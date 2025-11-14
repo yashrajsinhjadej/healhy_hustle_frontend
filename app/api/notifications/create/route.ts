@@ -7,121 +7,90 @@ export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     
-    // Get the request body
     const body = await request.json()
-    
+
     console.log('📨 [Create Notification API] Creating notification')
     console.log('📨 [Create Notification API] Request body:', JSON.stringify(body, null, 2))
     console.log('📨 [Create Notification API] Auth header:', authHeader ? 'Present' : 'Missing')
-    
-    // Validate required fields
+
+    // Required fields
     if (!body.title || !body.body) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'Title and body are required' 
-        },
+        { success: false, error: 'Title and body are required' },
         { status: 400 }
       )
     }
 
-    // Validate scheduleType
     const validScheduleTypes = ['instant', 'daily', 'scheduled_once']
     if (!body.scheduleType || !validScheduleTypes.includes(body.scheduleType)) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'Invalid scheduleType. Must be: instant, daily, or scheduled_once' 
-        },
+        { success: false, error: 'Invalid scheduleType' },
         { status: 400 }
       )
     }
 
-    // Validate based on scheduleType
     if (body.scheduleType === 'daily' && !body.scheduledTime) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'scheduledTime is required for daily notifications (format: HH:mm)' 
-        },
+        { success: false, error: 'scheduledTime is required for daily notifications' },
         { status: 400 }
       )
     }
 
     if (body.scheduleType === 'scheduled_once' && !body.scheduledDate) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'scheduledDate is required for scheduled notifications (ISO 8601 format)' 
-        },
+        { success: false, error: 'scheduledDate is required' },
         { status: 400 }
       )
     }
-    
+
+    // 💥 THE IMPORTANT PART: Forward targetAudience + filters
+    const payload: any = {
+      title: body.title,
+      body: body.body,
+      scheduleType: body.scheduleType,
+      targetAudience: body.targetAudience || 'all',
+      filters: body.targetAudience === 'filtered' ? body.filters : undefined,
+      scheduledTime: body.scheduledTime,
+      scheduledDate: body.scheduledDate
+        ? new Date(body.scheduledDate).toISOString()
+        : undefined
+    }
+
     const backendUrl = getBackendApiUrl('/api/notification/admin/send-to-all')
+
     console.log('📨 [Create Notification API] Backend URL:', backendUrl)
-    
+
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(authHeader && { 'Authorization': authHeader }),
+        ...(authHeader && { 'Authorization': authHeader })
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(payload)
     })
 
     console.log('📨 [Create Notification API] Backend response status:', response.status)
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ [Create Notification API] Backend error response:', errorText)
-      
-      if (response.status === 401) {
-        try {
-          const errorData = JSON.parse(errorText)
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: errorData.error || errorData.message || 'Session expired',
-              message: errorData.message || errorData.error || 'Session expired'
-            },
-            { status: 401 }
-          )
-        } catch (parseError) {
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: 'Session expired',
-              message: 'Session expired'
-            },
-            { status: 401 }
-          )
-        }
-      }
-      
-      // Try to parse error response
+      const errText = await response.text()
+      console.error('❌ Backend error:', errText)
+
       try {
-        const errorData = JSON.parse(errorText)
+        const errJson = JSON.parse(errText)
         return NextResponse.json(
-          { 
-            success: false,
-            error: errorData.error || errorData.message || `Failed to create notification: ${response.status}` 
-          },
+          { success: false, error: errJson.error || errJson.message },
           { status: response.status }
         )
       } catch {
         return NextResponse.json(
-          { 
-            success: false,
-            error: `Failed to create notification: ${response.status} - ${errorText}` 
-          },
+          { success: false, error: errText },
           { status: response.status }
         )
       }
     }
 
     const result = await response.json()
-    console.log('✅ [Create Notification API] Notification created successfully')
+    console.log('✅ Notification created successfully')
 
     return NextResponse.json({
       success: true,
@@ -129,14 +98,10 @@ export async function POST(request: NextRequest) {
       data: result
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [Create Notification API] Error:', error)
     return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      },
+      { success: false, error: 'Internal server error', details: error.message },
       { status: 500 }
     )
   }
